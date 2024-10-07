@@ -1,0 +1,44 @@
+---
+title: "Vizualizaciones"
+format: html
+editor: visual
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, tinytex.verbose = TRUE, fig.pos = "H")
+
+library(readxl)
+library(tidyverse)
+
+data <- read_excel("data_visualization.xlsx")
+
+data <- mutate(data, fecha_nacimiento_2 = as.POSIXct(fecha_nacimiento, format = "%d-%m-%Y"))
+
+```
+
+```{r}
+p <- ggplot(data)
+p
+```
+
+```{r}
+p <- ggplot(data) + aes(x = sexo, y = fibe)
+ p
+```
+
+```{r}
+ p <- ggplot(data) + aes(x = sexo) + geom_bar()
+ p
+```
+
+```{r}
+p <- ggplot(data) + aes(y = sexo) + geom_bar(aes(fill = afectacion))
+ p
+```
+
+```{r}
+ p <- ggplot(data) + aes(x = sexo, fill = afectacion) +
+ geom_bar(position=position_dodge())
+ p
+```
+
