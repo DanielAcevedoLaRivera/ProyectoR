@@ -18,8 +18,6 @@ data <- mutate(data, fecha_nacimiento_2 = as.POSIXct(fecha_nacimiento, format = 
 
 ```
 
-
-
 ## Aplicación de dataset
 
 Aplicarlo a los datos importados:
@@ -28,15 +26,19 @@ Aplicarlo a los datos importados:
 p <- ggplot(data)
 p
 ```
+
 ```{r}
 length(unique(data$fibe))
 ```
+
 ```{r}
 length(unique(data$id_persona))
 ```
+
 ```{r}
 unique(data$parentesco)
 ```
+
 ## Ejes del gráfico
 
 Aplicamos el sistema de coordenadas
@@ -46,6 +48,7 @@ p <- ggplot(data) + aes(x = sexo, y = fibe)
 
 p
 ```
+
 ## Gráfico de barras
 
 ```{r}
@@ -123,8 +126,6 @@ p <- ggplot(data_summary, aes(x = sexo, y = porcentaje, fill = afectacion)) +
 print(p)
 ```
 
-
-
 ```{r}
 library(ggplot2)
 library(dplyr)
@@ -154,4 +155,3 @@ print(p)
 
 
 ```
-
