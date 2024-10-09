@@ -1,0 +1,128 @@
+---
+title: "Proyecyo"
+format: html
+editor: visual
+---
+
+### **Proyección de ocupación**
+
+```{r, error = FALSE, warning = FALSE, message = FALSE}
+#| echo: false
+library(stringr)
+library(readxl)
+library(dplyr)
+```
+
+## Información del hotel
+
+En primer lugar, se obtendrá la información desde un archivo pdf, sobre la ocupación historica del hotel y se verifica que contenga los campos por utilizar.
+
+```{r}
+data <- read_excel("history.xlsx")
+
+head(data)
+```
+
+Ahora se transforma la informacion en un dataframe y se filtran las columnas a utilizar, a través de la función select de la bilbioteca dplyr, con la siguiente descripción:
+
+-   CONSIDERED_DATE = Fecha.
+
+-   NO_ROOMS = Cantidad de habitaciones ocupadas.
+
+-   CF_OCCUPANCY = % de ocupación sobre las habitaciones disponibles.
+
+-   REAL_OCCUPANCY = % de ocupación sobre el total de habitaciones del hotel.
+
+-   REVENUE = Total ingresos en pesos del día CF_AVERAGE_ROOM_RATE = Valor promedio de la habitación del día.
+
+```{r}
+ocupacion <- data.frame(data)
+
+ocupacion %>% select("CONSIDERED_DATE",
+                           "NO_ROOMS",
+                           "CF_OCCUPANCY",
+                           "REAL_OCCUPANCY", 
+                           "REVENUE",
+                           "CF_AVERAGE_ROOM_RATE")
+head(ocupacion)
+```
+
+Ahora se agrupa el criterio, ya que no resulto transformar la columna CHAR_CONSIDERED_DATE en formato fecha, se agrupará por el formato de la columna CONSIDERE_DATE, elimando los primeros 3 caracteres, obteniendo un string de formado MMM-AA, puediendo agrupar los items por mes y año.
+
+```{r}
+ocupacion <- ocupacion %>%
+  mutate(CONSIDERED_DATE = str_replace_all(
+    CONSIDERED_DATE,
+    c("JAN" = "01", "FEB" = "02", "MAR" = "03", 
+      "APR" = "04", "MAY" = "05", "JUN" = "06", 
+      "JUL" = "07", "AUG" = "08", "SEP" = "09", 
+      "OCT" = "10", "NOV" = "11", "DEC" = "12")
+  ))
+ocupacion <- ocupacion %>%
+  mutate(CONSIDERED_DATE = as.Date(paste0("20", str_sub(CONSIDERED_DATE, 1, 2), "-", str_sub(CONSIDERED_DATE, 4, 5), "-01"))) # Formato: YYYY-MM-DD
+
+# Ordenar el DataFrame por la columna 'Fecha'
+ocupacion <- ocupacion %>%
+  arrange(CONSIDERED_DATE)
+```
+
+Se agrupan las filas por el concepto de fecha, creando un nuevo data frame, con la suma de las ventas y los promedios de las otras columnas.
+
+```{r}
+hotel <- ocupacion %>%
+  group_by(CONSIDERED_DATE) %>%
+  summarize(
+    ventas = sum(REVENUE, na.rm = TRUE), 
+    habitaciones = sum(NO_ROOMS, na.rm = TRUE),
+    prom_hab = mean(CF_AVERAGE_ROOM_RATE, na.rm = TRUE),
+    ocupacion = mean(CF_OCCUPANCY, na.rm = TRUE),
+    ocupacion_real = mean(REAL_OCCUPANCY, na.rm = TRUE),
+    .groups = 'drop'  # Evita el agrupamiento adicional en el resultado
+  )
+head(hotel)
+```
+
+## Información del mercado hotelero
+
+Al igual que en el caso del hotel se trabajara sobre una base de datos de la industria hotelera, obtenida directamente del [INE](https://view.officeapps.live.com/op/view.aspx?src=https%3A%2F%2Fwww.ine.gob.cl%2Fdocs%2Fdefault-source%2Factividad-del-turismo%2Fbbdd%2Fdocumentos%2Fenero-2017-a-octubre-2018.xlsx%3Fsfvrsn%3D1965c721_4&wdOrigin=BROWSELINK).
+
+```{r}
+data2 <- read_excel("ine.xlsx")
+
+head(data2)
+```
+
+```{r}
+industria <- data.frame(data2)
+
+industria <- data2 %>%
+  select(Fecha, `Total Llegadas`, `Total Pernoctación`)
+
+ine <- industria %>% 
+  group_by(Fecha) %>%
+  summarize(
+    total_llegadas = sum(`Total Llegadas`, na.rm = TRUE), 
+    total_ocupacion_ind = sum(`Total Pernoctación`, na.rm = TRUE),
+    .groups = 'drop'  # Evita el agrupamiento adicional en el resultado
+  )
+head(ine)
+```
+
+```{r}
+
+ine <- ine %>%
+  mutate(Fecha = str_replace_all(
+    Fecha,
+    c("45582" = "17-10", "45583" = "18-10", "45613" = "17-10", 
+      "45643" = "17-12")
+  ))
+
+ine <- ine %>%
+  mutate(Fecha = as.Date(paste0("20", str_sub(Fecha, 1, 2), "-", str_sub(Fecha, 4, 5), "-01"))) # Formato: YYYY-MM-DD
+
+# Ordenar el DataFrame por la columna 'Fecha'
+ine <- ine %>%
+  arrange(Fecha)
+
+head(ine)
+```
