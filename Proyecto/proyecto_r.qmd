@@ -11,6 +11,8 @@ editor: visual
 library(stringr)
 library(readxl)
 library(dplyr)
+library(ggplot2)
+library(scales)
 ```
 
 ## Información del hotel
@@ -39,7 +41,7 @@ Ahora se transforma la informacion en un dataframe y se filtran las columnas a u
 ocupacion <- data.frame(data)
 
 ocupacion %>% select("CONSIDERED_DATE",
-                           "NO_ROOMS",
+                           "NO_PERSONS",
                            "CF_OCCUPANCY",
                            "REAL_OCCUPANCY", 
                            "REVENUE",
@@ -66,19 +68,28 @@ ocupacion <- ocupacion %>%
   arrange(CONSIDERED_DATE)
 ```
 
+En esta parte se filtra el codigo para que contenga el mismo rango de fechas que la muestra sobre la ocupación en la industria.
+
+```{r}
+ocupacion_filtrada <- ocupacion %>%
+  filter(CONSIDERED_DATE >= as.Date("2017-01-01") & CONSIDERED_DATE <= as.Date("2018-10-01"))
+```
+
 Se agrupan las filas por el concepto de fecha, creando un nuevo data frame, con la suma de las ventas y los promedios de las otras columnas.
 
 ```{r}
-hotel <- ocupacion %>%
+hotel <- ocupacion_filtrada %>%
   group_by(CONSIDERED_DATE) %>%
   summarize(
     ventas = sum(REVENUE, na.rm = TRUE), 
-    habitaciones = sum(NO_ROOMS, na.rm = TRUE),
+    pasajero_en_casa = sum(NO_PERSONS, na.rm = TRUE),
     prom_hab = mean(CF_AVERAGE_ROOM_RATE, na.rm = TRUE),
     ocupacion = mean(CF_OCCUPANCY, na.rm = TRUE),
     ocupacion_real = mean(REAL_OCCUPANCY, na.rm = TRUE),
     .groups = 'drop'  # Evita el agrupamiento adicional en el resultado
   )
+hotel <- hotel %>%
+  rename(Fecha = CONSIDERED_DATE)
 head(hotel)
 ```
 
@@ -120,9 +131,84 @@ ine <- ine %>%
 ine <- ine %>%
   mutate(Fecha = as.Date(paste0("20", str_sub(Fecha, 1, 2), "-", str_sub(Fecha, 4, 5), "-01"))) # Formato: YYYY-MM-DD
 
+
+
 # Ordenar el DataFrame por la columna 'Fecha'
 ine <- ine %>%
   arrange(Fecha)
 
 head(ine)
 ```
+
+En esta parte se crea el dataframe con los datos los data frame "ine" y "hotel", que contienen la información del mercado hotelero chileno y del hotel en observación.
+
+```{r}
+ipc <- read_excel("ipc.xlsx")
+
+
+head(ipc)
+```
+
+
+```{r}
+ipc <- ipc %>%
+  rename(Fecha = Periodo)%>%
+  rename(ipc_ = `1.IPC`)
+
+datos <- ine %>%
+  left_join(hotel %>% select(Fecha, prom_hab, pasajero_en_casa), by = "Fecha")%>%
+  left_join(ipc %>% select(Fecha, ipc_), by = "Fecha")
+
+
+head(datos)
+```
+
+# Utilizando los data frame
+
+El total de las habitaciones en uso durante los periodos sera considerada como el Y, ya que es el referente del mercado de la industria hotelera, se observa los picks estivales en verano, mostrando un comportamiento similar en cada mes para los 2 años observados.
+
+```{r}
+ggplot(data = datos, aes(x = Fecha, y = total_llegadas)) +
+  geom_line(color = "blue") +  # Línea azul
+  geom_point(color = "red") +   # Puntos rojos en cada observación
+  labs(title = "Total de habitaciones utilizadas",
+       x = "Fecha",
+       y = "total_ocupacion_ind") +
+  scale_x_date(breaks = datos$Fecha,labels = date_format("%Y-%m")) + 
+  theme(axis.text.x = element_text(angle = 75, hjust = 1, size = 8))
+ theme_minimal()
+```
+
+La correlación entre los valores dependientes, que son principalmente los pasajeros en cada del hotel en relación a la ocupación total del mercado es del 95.35% y con el valor promedio de la habitación es de un %90.92, por lo que se entiende una correlación positiva entre las variables.
+
+```{r}
+correlacion <- cor(datos[, -1])  # Excluyendo la columna Fecha
+print(correlacion)
+```
+
+
+```{r}
+summary(select(datos, -Fecha))
+```
+
+
+
+```{r}
+
+estadistica <- lm( log(total_ocupacion_ind) ~ log(pasajero_en_casa), data = datos)
+
+summary(estadistica)
+
+```
+
+
+```{r}
+predicciones <- predict(estadistica)
+
+residuos <- datos$pasajero_en_casa - predicciones
+
+rmse <- round(sqrt(mean(residuos^2)), 2)
+
+print(rmse)
+```
+Para la proxima entrega se realizaran simulaciones de posibles escenarios segun los datos obtenidos, para determinar la futura ocupacion del hotel, a pesar de la poca cantidad de datos recolectados.
