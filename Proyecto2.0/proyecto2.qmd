@@ -1,0 +1,232 @@
+---
+title: "Proyecto 2.0"
+format: html
+editor: visual
+---
+
+### **Proyección de ocupación**
+
+```{r, error = FALSE, warning = FALSE, message = FALSE}
+library(stringr)
+library(readxl)
+library(dplyr)
+library(ggplot2)
+library(scales)
+library(rvest)
+library(lubridate)
+library(triangle) 
+```
+##Procesando la información
+
+  En primer lugar se extraen la información de los excel en la carpeta de trabajo periodos entre en 2016 y septiembre del 2024.
+
+```{r}
+data1 <- read_excel("history.xlsx")
+data2 <- read_excel("tipo_cambio.xlsx")
+
+
+```
+
+  Es este apartado se busca extraer las columnas que se utilizaran desde history.xlsx y se busca transformar la columna "CONSIDERED_DATE" en fecha, revisando las primeras 6 filas de información. 
+
+```{r}
+
+ocupacion = data1 %>% select(CONSIDERED_DATE,
+                                    NO_ROOMS,
+                                    CF_OCCUPANCY,
+                                    CF_AVERAGE_ROOM_RATE)
+ocupacion <- ocupacion %>%
+  mutate(CONSIDERED_DATE = str_replace_all(
+    CONSIDERED_DATE,
+    c("JAN" = "01", "FEB" = "02", "MAR" = "03", 
+      "APR" = "04", "MAY" = "05", "JUN" = "06", 
+      "JUL" = "07", "AUG" = "08", "SEP" = "09", 
+      "OCT" = "10", "NOV" = "11", "DEC" = "12")
+  ))
+
+
+head(ocupacion)
+```
+  En este apartado se consulta por el tipo de información que aporta el df ocupacion.
+```{r}
+sapply(ocupacion, class)
+```
+  Para trabajar la información, en este caso, se requiere que esta sea numerica, por lo que se tranforman los valores a los que se procesaran.
+
+```{r}
+ocupacion1 <- ocupacion %>%
+  mutate(
+   # Convertir CF_OCCUPANCY a numérico; quitar símbolos no numéricos como '%'
+    CF_OCCUPANCY = as.numeric(gsub("%", "", CF_OCCUPANCY)) / 100,
+    
+    # Convertir CF_AVERAGE_ROOM_RATE a numérico
+    CF_AVERAGE_ROOM_RATE = as.numeric(CF_AVERAGE_ROOM_RATE),
+    
+    # Redondear los valores numéricos a 2 decimales
+    CF_OCCUPANCY = round(CF_OCCUPANCY, 2),
+    CF_AVERAGE_ROOM_RATE = round(CF_AVERAGE_ROOM_RATE, 2)
+  )
+
+
+# Mostrar las primeras filas para ver el resultado
+head(ocupacion1)
+```
+  Ahora se tranforma la columna CONSIDERED_DATE en formato fecha, para incluir una columna de tipo_cambio.xlsx.
+
+```{r}
+# Suponiendo que CONSIDERED_DATE está en formato "dd-mm-yy", lo convertimos a formato Date
+ocupacion1 <- ocupacion1 %>%
+  mutate(CONSIDERED_DATE = dmy(CONSIDERED_DATE))  # dmy() convierte de día-mes-año a Date
+
+# Crear la nueva columna con formato "YYYY-MM"
+ocupacion1 <- ocupacion1 %>%
+  mutate(Año_Mes = format(CONSIDERED_DATE, "%Y-%m"))  # Crea la nueva columna con formato Año-Mes
+
+# Mostrar el resultado
+head(ocupacion1)
+
+```
+
+  Se agrupa la información en el formato que vendrá lso datos sobre el tipo cambio.
+
+```{r}
+ocupacion1 <- ocupacion1 %>%
+  group_by(Año_Mes) %>%  # Agrupar por la columna Año_Mes
+  summarise(
+    No_Rooms = sum(NO_ROOMS, na.rm = TRUE),  # Suma de NO_ROOMS
+    CF_Occupancy = mean(CF_OCCUPANCY, na.rm = TRUE),  # Promedio de CF_OCCUPANCY
+    CF_Average_Room_Rate = mean(CF_AVERAGE_ROOM_RATE, na.rm = TRUE)  # Promedio de CF_AVERAGE_ROOM_RATE
+  )
+print(ocupacion1)
+```
+
+
+  Se incluye al data frame la columna dolar desde tipo_cambio.xlsx.
+
+
+```{r}
+data2 <- data2 %>%
+  mutate(Año_Mes = format(Año_Mes, "%Y-%m")) 
+
+# Ahora, unimos ocupacion1 con data2
+ocupacion1 <- ocupacion1 %>%
+  left_join(data2 %>% select(Año_Mes, dolar), by = "Año_Mes")  # Unir por la columna Año_Mes
+
+# Mostrar el resultado
+head(ocupacion1)
+```
+##Proyección
+
+
+  Se filtra la información que tenga valores 0, para realizar una regresión linenal logaritmica, ya que los valores vienen en formato unidad y pesos, para dilusidar el siguiente calculo.
+
+```{=tex}
+\begin{equation}
+No_Rooms = \alpha + \beta1*log(prom$hab) + \beta2*log(dolar)
+\end{equation}
+```
+
+```{r}
+# Eliminar filas donde hay valores cero o negativos
+ocupacion1 <- ocupacion1 %>%
+  filter(No_Rooms > 0 & CF_Average_Room_Rate > 0 & dolar > 0)
+
+#Generar el modelo de regresión lineal
+modelo <- lm(log(No_Rooms) ~ log(CF_Average_Room_Rate) + log(dolar), data = ocupacion1)
+
+
+summary(modelo)
+```
+
+
+
+```{=tex}
+\begin{equation}
+No_Rooms = 9.9863 + 0.511*log(prom$hab) - 1.3651*log(dolar)
+\end{equation}
+```
+
+
+
+  Ahora se rpoyectaran varios escenarios bajor probabilidades en torno a la información historica recopilada.
+
+
+```{r}
+# Seleccionar las columnas numéricas del data frame
+numericas <- ocupacion1[, sapply(ocupacion1, is.numeric)]
+# Calcular la desviación estándar de todas las columnas numéricas
+desviaciones <- sd(ocupacion1$CF_Average_Room_Rate, na.rm = TRUE)
+desvia <- round(desviaciones,2)
+desviaciones2 <- sd(ocupacion1$dolar, na.rm = TRUE)
+desvia2 <- round(desviaciones2,2)
+# Mostrar los resultados de las medias y desviacion estandar
+
+mean1<- summary(numericas$CF_Average_Room_Rate)
+mean2<- summary(numericas$dolar)
+mean1
+mean2
+```
+
+
+
+
+
+```{r}
+set.seed(123456)
+
+simulaciones = 1000
+
+# Rango permitido para la tarifa
+min_tarifa <- min(mean1)  # Límite inferior
+max_tarifa <- max(mean1)
+# Límite superior
+min_dolar <- max(mean2) - 150  # Límite inferior
+max_dolar <- max(mean2)+ 150  # Límite superior
+
+tarifa_simulada <- numeric(simulaciones)  # Vector para almacenar las tarifas
+for (i in 1:simulaciones) {
+  repeat {
+    tarifa <- rnorm(1, mean = mean1, sd = desvia)  # Generar una tarifa
+    if (tarifa >= min_tarifa && tarifa <= max_tarifa) {
+      tarifa_simulada[i] <- tarifa  # Almacenar si está dentro del rango
+      break  # Salir del bucle si se cumple la condición
+    }
+  }
+}
+dolar_simulado <- numeric(simulaciones)  # Vector para almacenar los dólares
+for (i in 1:simulaciones) {
+  repeat {
+    dolar <- rnorm(1, mean = mean2, sd = desvia2)  # Generar un valor de dólar
+    if (dolar >= min_dolar && dolar <= max_dolar) {
+      dolar_simulado[i] <- dolar  # Almacenar si está dentro del rango
+      break  # Salir del bucle si se cumple la condición
+    }
+  }
+}
+
+# Crear el data frame con las simulaciones
+df_simulaciones <- data.frame(
+  tarifa = tarifa_simulada,
+  dolar = dolar_simulado
+)
+
+
+
+```
+
+```{r}
+# Crear el gráfico de dispersión
+ggplot(df_simulaciones, aes(x = dolar, y = tarifa)) +
+  geom_point(alpha = 0.7, color = "blue") +  # Agregar puntos
+  labs(title = "Simulaciones de Tarifa vs Dólar",
+       x = "Dólar Simulado",
+       y = "Tarifa Simulada") +
+  theme_minimal() +  # Usar un tema minimalista
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+
+
+
+
+

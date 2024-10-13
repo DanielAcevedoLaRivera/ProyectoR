@@ -1,0 +1,53 @@
+---
+title: "Regresion"
+format: html
+editor: visual
+execute: 
+  warning: false
+---
+
+
+
+```{r}
+
+library(pa)
+
+```
+
+Llamado set de datos:
+```{r}
+data(year)
+data(jan)
+names(year)
+```
+Sectores, paises y monedas en la base de datos, para ver el grupo a analizar.
+```{r}
+unique(year$sector)
+unique(year$country)
+unique(year$currency)
+unique(year$date)
+```
+```{r}
+unique(jan$date)
+```
+```{r}
+data(jan)
+br.single <- brinson(x = jan, date.var = "date",
+ cat.var = "sector", #categoria a comparar
+ bench.weight = "benchmark", #peso del mercado x categoria
+ portfolio.weight = "portfolio", #peso en el portafolio
+ ret.var = "return") #retorno
+
+summary(br.single)
+```
+
+
+
+
+
+
+
+
+
+
+
