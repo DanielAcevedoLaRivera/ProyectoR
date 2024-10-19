@@ -9,9 +9,8 @@ library(stringr)
 library(readxl)
 library(dplyr)
 library(ggplot2)
-library(scales)
 library(forecast)
-library(lubridate)
+library(lubridate) 
 ```
 
 ## Información del hotel
@@ -36,9 +35,12 @@ Ahora se transforma la informacion en un dataframe y se filtran las columnas a u
 
 -   REVENUE = Total ingresos en pesos del día CF_AVERAGE_ROOM_RATE = Valor promedio de la habitación del día.
 
-```{r}
-ocupacion <- data.frame(data)
+```{r, error = FALSE, warning = FALSE, message = FALSE, echo = FALSE}
+ocupacion <- data
+```
 
+
+```{r}
 ocupacion %>% select("CONSIDERED_DATE",
                            "NO_PERSONS",
                            "CF_OCCUPANCY",
@@ -121,6 +123,7 @@ summary(predicciones)
 
 
 ```{r}
+
 # Graficar las predicciones con etiquetas
 autoplot(predicciones) +
   geom_text(aes(x = time(predicciones$mean), y = predicciones$mean, label = round(predicciones$mean, 1)), 
@@ -130,6 +133,9 @@ autoplot(predicciones) +
        y = "Ocupación Promedio (%)") +
   theme_minimal()
 ```
+
+
+
 ##Despliege y Monitoreo
 
   Se espera aplicar esta proyección en las aplicación en presupuestos y flujos de la compañia, como una base para las ventas futuras, acorde a la temporada del año, para poder ajustar las politicas de tarifa por temporada, así ser más atractivo en el mercado y sacar el mayor margen segun cada periodo.
