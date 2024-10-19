@@ -1,0 +1,85 @@
+---
+title: "modelo"
+format: html
+editor: visual
+---
+
+---
+title: "Modelo ARIMA"
+author: "Tu Nombre"
+date: "Fecha"
+format: html
+---
+
+## Introducción al Modelo ARIMA
+
+El modelo ARIMA (AutoRegressive Integrated Moving Average) es una técnica ampliamente utilizada en el análisis de series temporales. Este modelo combina tres componentes principales:
+
+1. **AR (AutoRegresivo)**: Representa la relación entre una observación y un número de observaciones rezagadas (pasadas).
+2. **I (Integrado)**: Refleja la necesidad de diferenciar la serie temporal para hacerla estacionaria. Esto significa que se toman diferencias de las observaciones originales para eliminar tendencias y estacionalidades.
+3. **MA (Media Móvil)**: Captura la relación entre una observación y un número de errores rezagados.
+
+La notación ARIMA se representa como ARIMA(p, d, q), donde:
+
+- $$ p $$ es el orden del componente autorregresivo.
+- $$ d $$ es el número de diferencias necesarias para hacer la serie estacionaria.
+- $$ q $$ es el orden del componente de media móvil.
+
+## Ecuaciones Matemáticas del Modelo ARIMA
+
+### 1. Componente Autorregresivo (AR)
+
+El componente AR se expresa como:
+
+$$
+Y_t = \phi_1 Y_{t-1} + \phi_2 Y_{t-2} + \ldots + \phi_p Y_{t-p} + \varepsilon_t
+$$
+
+donde:
+- $$ Y_t $$ es el valor de la serie en el tiempo \( t \).
+- $$ \phi_i$$ son los coeficientes del modelo.
+- $$ \varepsilon_t $$ es el término de error en el tiempo \( t \) (ruido blanco).
+
+### 2. Componente de Diferenciación (I)
+
+La diferenciación se aplica para hacer la serie estacionaria. La primera diferencia se calcula como:
+
+$$
+\Delta Y_t = Y_t - Y_{t-1}
+$$
+
+El número de diferencias se denota por \( d \). Si \( d = 1 \), la serie se diferencia una vez. Si \( d = 2 \), la serie se diferencia dos veces, y así sucesivamente.
+
+### 3. Componente de Media Móvil (MA)
+
+El componente MA se expresa como:
+
+$$
+Y_t = \mu + \theta_1 \varepsilon_{t-1} + \theta_2 \varepsilon_{t-2} + \ldots + \theta_q \varepsilon_{t-q} + \varepsilon_t
+$$
+
+donde:
+- $$ \mu $$ es la media de la serie.
+- $$ \theta_j $$ son los coeficientes del componente de media móvil.
+- $$ \varepsilon_{t-j} $$ son los errores rezagados.
+
+### 4. Modelo ARIMA Combinado
+
+El modelo ARIMA combina estos componentes para predecir la serie temporal. Después de aplicar \( d \) diferencias, el modelo ARIMA se puede expresar de forma unificada como:
+
+$$
+Y_t = \phi_1 Y_{t-1} + \phi_2 Y_{t-2} + \ldots + \phi_p Y_{t-p} + \theta_1 \varepsilon_{t-1} + \theta_2 \varepsilon_{t-2} + \ldots + \theta_q \varepsilon_{t-q} + \varepsilon_t
+$$
+
+## Selección de Parámetros
+
+La selección de los parámetros \( p \), \( d \) y \( q \) se puede realizar utilizando métodos como:
+
+- **Análisis de ACF (AutoCorrelation Function)**: Ayuda a determinar el orden \( q \).
+- **Análisis de PACF (Partial AutoCorrelation Function)**: Ayuda a determinar el orden \( p \).
+- **Criterios de Información (AIC/BIC)**: Utilizados para comparar modelos y seleccionar el más adecuado.
+
+## Conclusiones
+
+El modelo ARIMA es una herramienta poderosa para la modelización de series temporales y proporciona un marco sólido para hacer predicciones basadas en datos históricos. Al comprender sus componentes y la forma de ajustar los parámetros, los analistas pueden aplicar el modelo de manera efectiva en una variedad de contextos.
+

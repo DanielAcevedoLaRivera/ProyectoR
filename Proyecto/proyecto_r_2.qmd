@@ -1,0 +1,143 @@
+---
+title: "Proyecto2.0"
+format: html
+editor: visual
+---
+```{r, error = FALSE, warning = FALSE, message = FALSE}
+#| echo: false
+library(stringr)
+library(readxl)
+library(dplyr)
+library(ggplot2)
+library(scales)
+library(forecast)
+library(lubridate)
+```
+
+## Información del hotel
+
+En primer lugar, se obtendrá la información desde un archivo pdf, sobre la ocupación historica del hotel y se verifica que contenga los campos por utilizar.
+
+```{r}
+data <- read_excel("history.xlsx")
+
+head(data)
+```
+
+Ahora se transforma la informacion en un dataframe y se filtran las columnas a utilizar, a través de la función select de la bilbioteca dplyr, con la siguiente descripción:
+
+-   CONSIDERED_DATE = Fecha.
+
+-   NO_ROOMS = Cantidad de habitaciones ocupadas.
+
+-   CF_OCCUPANCY = % de ocupación sobre las habitaciones disponibles.
+
+-   REAL_OCCUPANCY = % de ocupación sobre el total de habitaciones del hotel.
+
+-   REVENUE = Total ingresos en pesos del día CF_AVERAGE_ROOM_RATE = Valor promedio de la habitación del día.
+
+```{r}
+ocupacion <- data.frame(data)
+
+ocupacion %>% select("CONSIDERED_DATE",
+                           "NO_PERSONS",
+                           "CF_OCCUPANCY",
+                           "REAL_OCCUPANCY", 
+                           "REVENUE",
+                           "CF_AVERAGE_ROOM_RATE")
+head(ocupacion)
+```
+
+Ahora se agrupa el criterio, ya que no resulto transformar la columna CHAR_CONSIDERED_DATE en formato fecha, se agrupará por el formato de la columna CONSIDERE_DATE, elimando los primeros 3 caracteres, obteniendo un string de formado MMM-AA, puediendo agrupar los items por mes y año.
+
+```{r}
+ocupacion <- ocupacion %>%
+  mutate(CONSIDERED_DATE = str_replace_all(
+    CONSIDERED_DATE,
+    c("JAN" = "01", "FEB" = "02", "MAR" = "03", 
+      "APR" = "04", "MAY" = "05", "JUN" = "06", 
+      "JUL" = "07", "AUG" = "08", "SEP" = "09", 
+      "OCT" = "10", "NOV" = "11", "DEC" = "12")
+  ))
+ocupacion <- ocupacion %>%
+  mutate(CONSIDERED_DATE = as.Date(paste0("20", str_sub(CONSIDERED_DATE, 1, 2), "-", str_sub(CONSIDERED_DATE, 4, 5), "-01"))) # Formato: YYYY-MM-DD
+
+# Ordenar el DataFrame por la columna 'Fecha'
+ocupacion <- ocupacion %>%
+  arrange(CONSIDERED_DATE)
+ocupacion <- ocupacion %>%
+  filter(CONSIDERED_DATE > as.Date("2021-11-01"))
+```
+
+##Modelo y proyección
+
+  Se aplica un modelo de prediccion basaro en la temporalidad, ya que la industria hotelera tiene mejores ventas en periodos de vacaiones, ya que en gran parte la demanda es nacional o de paises limitrofes.
+
+El modelo ARIMA:
+  AR: Componente de autorregresión temporal, donde relaciona las observaciones pasadas con las presentes.
+$$
+Y_t = \phi_1 Y_{t-1} + \phi_2 Y_{t-2} + \ldots + \phi_p Y_{t-p} + \varepsilon_t
+$$
+  I:Componente de diferenciación entre el periodo actual y el anterior.
+$$
+\Delta Y_t = Y_t - Y_{t-1}
+$$
+  MA:Componente de media movíl, que capta los errores pasados en el valor actual de la serie temporal.
+$$
+Y_t = \mu + \theta_1 \varepsilon_{t-1} + \theta_2 \varepsilon_{t-2} + \ldots + \theta_q \varepsilon_{t-q} + \varepsilon_t
+$$
+  Estos 3 componentes unidos, dan la posibilidad de proyectar valores según una serie de tiempo.
+
+$$
+Y_t = \phi_1 Y_{t-1} + \phi_2 Y_{t-2} + \ldots + \phi_p Y_{t-p} + \theta_1 \varepsilon_{t-1} + \theta_2 \varepsilon_{t-2} + \ldots + \theta_q \varepsilon_{t-q} + \varepsilon_t
+$$
+
+
+  En este apartado se toma la serie temporal, clasificando la temporalidad en meses y se proyecta la ocupación % para 2 años, cabe destacar que 67 es el total de habitaciones disponibles.
+  
+```{r}
+#Convertir la columna 'CONSIDERED_DATE' a tipo Date
+ocupacion$CONSIDERED_DATE <- as.Date(ocupacion$CONSIDERED_DATE)
+
+#Agrupar datos diarios por mes
+ocupacion_mensual <- ocupacion %>%
+  group_by(Fecha = floor_date(CONSIDERED_DATE, "month")) %>%
+  summarize(prom_ocupacion = mean(CF_OCCUPANCY, na.rm = TRUE), .groups = 'drop')
+
+#Crear un objeto de serie temporal con los datos de ocupación mensual
+ts_ocupacion_mensual <- ts(ocupacion_mensual$prom_ocupacion, frequency = 12, start = c(2021, 11))
+
+#Ajustar un modelo ARIMA
+modelo_arima <- auto.arima(ts_ocupacion_mensual)
+
+#Hacer predicciones para los próximos 24 meses
+predicciones <- forecast(modelo_arima, h = 24)
+
+summary(predicciones)
+```
+
+
+  Se grafica la proyección.
+
+
+```{r}
+# Graficar las predicciones con etiquetas
+autoplot(predicciones) +
+  geom_text(aes(x = time(predicciones$mean), y = predicciones$mean, label = round(predicciones$mean, 1)), 
+            vjust = -0.5, size = 2) +  # Ajusta el tamaño de la fuente y la posición vertical
+  labs(title = "Proyección Mensual de Ocupación del Hotel", 
+       x = "Fecha", 
+       y = "Ocupación Promedio (%)") +
+  theme_minimal()
+```
+##Despliege y Monitoreo
+
+  Se espera aplicar esta proyección en las aplicación en presupuestos y flujos de la compañia, como una base para las ventas futuras, acorde a la temporada del año, para poder ajustar las politicas de tarifa por temporada, así ser más atractivo en el mercado y sacar el mayor margen segun cada periodo.
+  
+  Por el momento faltan controles para determinar la capacidad probabilistica del mismo, con más tiempo se aplicarán herramientas de Machine Learing supervisado, donde se contrastará el modelo con una muestra de practica y otra de testeo, en el modelo ARIME u otro que pueda dar respuesta al pronostico de la ocupación.
+  
+  Para el monitoreo, se hara una contraste con la realidad, es decir con el dato pasado, si esta tiene una desviación significante, se buscará hacer el modelo más robusto con otros factores que puedan incidir en el hotel.
+  
+  Además se solicitar los permisos para obtener los datos directos de la base de datos, para que estos puedan ser revisados en tiempo real, revisando la información diaria, agregando a la ecuacion el factor día, ya que los fin de semanas es donde mayor ocupación hay, sumado a la inclusion de Machine Learning, se podría desarrollar un modelo no supervisado y vaya actualizando las proyección, optimizando el mejor modelo.
+  
+  

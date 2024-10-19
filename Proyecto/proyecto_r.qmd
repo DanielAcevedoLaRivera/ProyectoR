@@ -13,6 +13,7 @@ library(readxl)
 library(dplyr)
 library(ggplot2)
 library(scales)
+library(forecast)
 ```
 
 ## Información del hotel
@@ -149,7 +150,6 @@ ipc <- read_excel("ipc.xlsx")
 head(ipc)
 ```
 
-
 ```{r}
 ipc <- ipc %>%
   rename(Fecha = Periodo)%>%
@@ -159,7 +159,13 @@ datos <- ine %>%
   left_join(hotel %>% select(Fecha, prom_hab, pasajero_en_casa), by = "Fecha")%>%
   left_join(ipc %>% select(Fecha, ipc_), by = "Fecha")
 
-
+datos <- datos %>%
+  mutate(
+    temporada = case_when(
+      format(Fecha, "%m") %in% c("12", "01", "02") ~ 1,  # Diciembre, enero, febrero (Temporada Alta)
+      TRUE ~ 0  # El resto del año (Temporada Baja)
+    )
+  )
 head(datos)
 ```
 
@@ -168,15 +174,16 @@ head(datos)
 El total de las habitaciones en uso durante los periodos sera considerada como el Y, ya que es el referente del mercado de la industria hotelera, se observa los picks estivales en verano, mostrando un comportamiento similar en cada mes para los 2 años observados.
 
 ```{r}
-ggplot(data = datos, aes(x = Fecha, y = total_llegadas)) +
+datos$Fecha <- as.Date(datos$Fecha)
+ggplot(data = datos, aes(x = Fecha, y = total_ocupacion_ind)) +
   geom_line(color = "blue") +  # Línea azul
   geom_point(color = "red") +   # Puntos rojos en cada observación
   labs(title = "Total de habitaciones utilizadas",
        x = "Fecha",
-       y = "total_ocupacion_ind") +
-  scale_x_date(breaks = datos$Fecha,labels = date_format("%Y-%m")) + 
-  theme(axis.text.x = element_text(angle = 75, hjust = 1, size = 8))
- theme_minimal()
+       y = "Total Ocupación Hoteles") +
+  scale_x_date(breaks = "6 months", labels = date_format("%Y-%m")) + 
+  theme(axis.text.x = element_text(angle = 75, hjust = 1, size = 5)) +
+  theme_minimal()
 ```
 
 La correlación entre los valores dependientes, que son principalmente los pasajeros en cada del hotel en relación a la ocupación total del mercado es del 95.35% y con el valor promedio de la habitación es de un %90.92, por lo que se entiende una correlación positiva entre las variables.
@@ -186,29 +193,75 @@ correlacion <- cor(datos[, -1])  # Excluyendo la columna Fecha
 print(correlacion)
 ```
 
-
 ```{r}
 summary(select(datos, -Fecha))
 ```
 
-
-
 ```{r}
 
-estadistica <- lm( log(total_ocupacion_ind) ~ log(pasajero_en_casa), data = datos)
+estadistica <- lm( log(pasajero_en_casa) ~ log(total_ocupacion_ind) + factor(temporada) , data = datos)
 
 summary(estadistica)
 
 ```
+```{r}
+# Crear un objeto de serie temporal con los datos de ocupación del hotel, desde la informacion historica, con una freciancia de 12mese e iniciancdo el 01-2017
+
+ts_ocupacion <- ts(hotel$ocupacion, frequency = 12, start = c(2017, 1))
+
+# Ajustar un modelo ARIMA, que es unmodelo para estucturas temporales, como es el caso.  
+modelo_arima <- auto.arima(ts_ocupacion)
+
+# Hacer predicciones para los próximos 24 meses 
+predicciones <- forecast(modelo_arima, h = 24)
+
+# Graficar las predicciones, considernado intervalos de confianza del 80% y 90%
+autoplot(predicciones) +
+  labs(title = "Proyección de Ocupación del Hotel", 
+       x = "Fecha", 
+       y = "Ocupación (%)") +
+  theme_minimal()
+```
 
 
 ```{r}
-predicciones <- predict(estadistica)
+# Establecer el tamaño del conjunto de entrenamiento
+n <- nrow(hotel)
+train_size <- floor(0.8 * n)
 
-residuos <- datos$pasajero_en_casa - predicciones
+# Crear conjuntos de entrenamiento y prueba
+train_data <- hotel$ocupacion[1:train_size]
+test_data <- hotel$ocupacion[(train_size + 1):n]
 
-rmse <- round(sqrt(mean(residuos^2)), 2)
+# Crear un objeto de serie temporal para el conjunto de entrenamiento
+ts_train <- ts(train_data, frequency = 12, start = c(2017, 1))
 
-print(rmse)
+# Ajustar el modelo ARIMA
+modelo_arima <- auto.arima(ts_train)
+
+# Hacer predicciones para el tamaño del conjunto de prueba
+h <- length(test_data)  # Longitud del conjunto de prueba
+predicciones <- forecast(modelo_arima, h = h)
+
+# Calcular RMSE
+rmse <- sqrt(mean((predicciones$mean - test_data)^2))
+cat("RMSE:", rmse, "\n")
+
+resultado <- data.frame(
+  Fecha = hotel$Fecha[(train_size + 1):n],
+  Real = test_data,
+  Predicho = predicciones$mean
+)
+
+
+# Graficar
+ggplot(resultado, aes(x = Fecha)) +
+  geom_line(aes(y = Real, color = "Real"), size = 1) +
+  geom_line(aes(y = Predicho, color = "Predicho"), size = 1, linetype = "dashed") +
+  labs(title = "Comparación de Ocupación Real vs. Predicha",
+       x = "Fecha",
+       y = "Ocupación (%)") +
+  scale_color_manual(values = c("Real" = "blue", "Predicho" = "red")) +
+  theme_minimal()
 ```
-Para la proxima entrega se realizaran simulaciones de posibles escenarios segun los datos obtenidos, para determinar la futura ocupacion del hotel, a pesar de la poca cantidad de datos recolectados.
+
