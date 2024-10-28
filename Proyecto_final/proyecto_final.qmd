@@ -11,10 +11,7 @@ library(stringr)
 library(readxl)
 library(dplyr)
 library(ggplot2)
-library(scales)
-library(rvest)
 library(lubridate)
-library(triangle) 
 library(forecast)
 library(tseries)
 ```
@@ -54,7 +51,6 @@ En este apartado se consulta por el tipo de información que aporta el df ocupac
 sapply(ocupacion, class)
 ```
 
-
 Ahora se modifican los tipos de datos para comenzar a crear el modelo ARIMA
 
 ```{r}
@@ -76,16 +72,11 @@ ocupacion1 <- ocupacion1 %>%
 sapply(ocupacion1, class)
 ```
 
-
 ```{r}
 head(ocupacion1)
 ```
 
-
-
-
-
-Primero hay que validar si la serie tiene caracteristicas de no estacionarias, para ello se debe rechazar la hipostesis nula, a través de la medición del p.valor, si es p.valor <0.05, se considera una serie estacionaria
+Primero hay que validar si la serie tiene caracteristicas de no estacionarias, para ello se debe rechazar la hipostesis nula, a través de la medición del p.valor, si es p.valor \<0.05, se considera una serie estacionaria
 
 ```{r}
 # Transformar los datos en una serie temporal diaria para cada variable
@@ -101,6 +92,7 @@ adf_test_tarifa <- adf.test(tarifa_ts)  # Prueba de raíz unitaria
 print(adf_test_ocupacion)
 print(adf_test_tarifa)
 ```
+
 ```{r}
 # Prueba de correlación
 resultado_cor_test <- cor.test(ocupacion_ts, tarifa_ts, method = "pearson")
@@ -108,6 +100,7 @@ resultado_cor_test <- cor.test(ocupacion_ts, tarifa_ts, method = "pearson")
 # Imprimir resultados de la prueba
 print(resultado_cor_test)
 ```
+
 ```{r}
 # Gráfico de dispersión
 plot(ocupacion_ts, tarifa_ts,
@@ -117,7 +110,6 @@ plot(ocupacion_ts, tarifa_ts,
 abline(lm(tarifa_ts ~ ocupacion_ts), col = "red")  # Línea de regresión
 ```
 
-
 ```{r}
 # Gráfico de autocorrelación parcial para ocupacion_ts
 pacf(ocupacion_ts, main = "Gráfico de Autocorrelación Parcial para Ocupación Promedio")
@@ -126,28 +118,4 @@ pacf(ocupacion_ts, main = "Gráfico de Autocorrelación Parcial para Ocupación 
 pacf(tarifa_ts, main = "Gráfico de Autocorrelación Parcial para Tarifa Promedio")
 ```
 
-
-```{r}
-# 2. Selección automática del modelo ARIMA
-modelo_ocupacion <- auto.arima(ocupacion_ts)
-
-# 3. Resumen del modelo de ocupación
-summary(modelo_ocupacion)
-
-
-
-# 2. Selección automática del modelo ARIMA
-modelo_tarifa <- auto.arima(tarifa_ts)
-
-# 3. Resumen del modelo de tarifa
-summary(modelo_tarifa)
-
-# Opcional: Pronóstico a futuro para ambas series
-pronostico_ocupacion <- forecast(modelo_ocupacion, h = 365)  # Pronóstico a 12 meses
-pronostico_tarifa <- forecast(modelo_tarifa, h = 365)
-
-# Visualización de los pronósticos
-plot(pronostico_ocupacion, main = "Pronóstico de Ocupación Promedio")
-plot(pronostico_tarifa, main = "Pronóstico de Tarifa Promedio")
-```
 
