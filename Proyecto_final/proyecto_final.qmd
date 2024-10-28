@@ -1,0 +1,153 @@
+---
+title: "Proyecto_final"
+format: html
+editor: visual
+---
+
+### **Proyección de ocupación**
+
+```{r, error = FALSE, warning = FALSE, message = FALSE}
+library(stringr)
+library(readxl)
+library(dplyr)
+library(ggplot2)
+library(scales)
+library(rvest)
+library(lubridate)
+library(triangle) 
+library(forecast)
+library(tseries)
+```
+
+En primer lugar se extraen la información de los excel en la carpeta de trabajo periodos entre en 2016 y septiembre del 2024.
+
+```{r}
+data1 <- read_excel("history.xlsx")
+
+head(data1)
+```
+
+Es este apartado se busca extraer las columnas que se utilizaran desde history.xlsx y se busca transformar la columna "CONSIDERED_DATE" en fecha, revisando las primeras 6 filas de información.
+
+```{r}
+
+ocupacion = data1 %>% select(CONSIDERED_DATE,
+                                    NO_ROOMS,
+                                    CF_OCCUPANCY,
+                                    CF_AVERAGE_ROOM_RATE)
+ocupacion <- ocupacion %>%
+  mutate(CONSIDERED_DATE = str_replace_all(
+    CONSIDERED_DATE,
+    c("JAN" = "01", "FEB" = "02", "MAR" = "03", 
+      "APR" = "04", "MAY" = "05", "JUN" = "06", 
+      "JUL" = "07", "AUG" = "08", "SEP" = "09", 
+      "OCT" = "10", "NOV" = "11", "DEC" = "12")
+  ))
+
+
+head(ocupacion)
+```
+
+En este apartado se consulta por el tipo de información que aporta el df ocupacion.
+
+```{r}
+sapply(ocupacion, class)
+```
+
+
+Ahora se modifican los tipos de datos para comenzar a crear el modelo ARIMA
+
+```{r}
+ocupacion1 <- ocupacion %>%
+  mutate(
+   # Convertir CF_OCCUPANCY a numérico; quitar símbolos no numéricos como '%'
+    CF_OCCUPANCY = as.numeric(gsub("%", "", CF_OCCUPANCY)) / 100,
+    
+    # Convertir CF_AVERAGE_ROOM_RATE a numérico
+    CF_AVERAGE_ROOM_RATE = as.numeric(CF_AVERAGE_ROOM_RATE),
+    
+    # Redondear los valores numéricos a 2 decimales
+    CF_OCCUPANCY = round(CF_OCCUPANCY, 2),
+    CF_AVERAGE_ROOM_RATE = round(CF_AVERAGE_ROOM_RATE, 0)
+  )
+ocupacion1 <- ocupacion1 %>%
+  mutate(CONSIDERED_DATE = dmy(CONSIDERED_DATE))  # dmy() convierte de día-mes-año a Date
+
+sapply(ocupacion1, class)
+```
+
+
+```{r}
+head(ocupacion1)
+```
+
+
+
+
+
+Primero hay que validar si la serie tiene caracteristicas de no estacionarias, para ello se debe rechazar la hipostesis nula, a través de la medición del p.valor, si es p.valor <0.05, se considera una serie estacionaria
+
+```{r}
+# Transformar los datos en una serie temporal diaria para cada variable
+# Filtrar solo las columnas necesarias para el análisis
+ocupacion_ts <- ts(ocupacion1$CF_OCCUPANCY, start = c(2016, 1), frequency = 365)
+tarifa_ts <- ts(ocupacion1$CF_AVERAGE_ROOM_RATE, start = c(2016, 1), frequency = 365)
+
+# Análisis ARIMA para la serie de ocupación promedio
+# 1. Diferenciar la serie para asegurar que sea estacionaria
+adf_test_ocupacion <- adf.test(ocupacion_ts)  # Prueba de raíz unitaria
+adf_test_tarifa <- adf.test(tarifa_ts)  # Prueba de raíz unitaria
+
+print(adf_test_ocupacion)
+print(adf_test_tarifa)
+```
+```{r}
+# Prueba de correlación
+resultado_cor_test <- cor.test(ocupacion_ts, tarifa_ts, method = "pearson")
+
+# Imprimir resultados de la prueba
+print(resultado_cor_test)
+```
+```{r}
+# Gráfico de dispersión
+plot(ocupacion_ts, tarifa_ts,
+     xlab = "Ocupación Promedio",
+     ylab = "Tarifa Promedio",
+     main = "Correlación entre Ocupación y Tarifa Promedio")
+abline(lm(tarifa_ts ~ ocupacion_ts), col = "red")  # Línea de regresión
+```
+
+
+```{r}
+# Gráfico de autocorrelación parcial para ocupacion_ts
+pacf(ocupacion_ts, main = "Gráfico de Autocorrelación Parcial para Ocupación Promedio")
+
+# Gráfico de autocorrelación parcial para tarifa_ts
+pacf(tarifa_ts, main = "Gráfico de Autocorrelación Parcial para Tarifa Promedio")
+```
+
+
+```{r}
+# 2. Selección automática del modelo ARIMA
+modelo_ocupacion <- auto.arima(ocupacion_ts)
+
+# 3. Resumen del modelo de ocupación
+summary(modelo_ocupacion)
+
+
+
+# 2. Selección automática del modelo ARIMA
+modelo_tarifa <- auto.arima(tarifa_ts)
+
+# 3. Resumen del modelo de tarifa
+summary(modelo_tarifa)
+
+# Opcional: Pronóstico a futuro para ambas series
+pronostico_ocupacion <- forecast(modelo_ocupacion, h = 365)  # Pronóstico a 12 meses
+pronostico_tarifa <- forecast(modelo_tarifa, h = 365)
+
+# Visualización de los pronósticos
+plot(pronostico_ocupacion, main = "Pronóstico de Ocupación Promedio")
+plot(pronostico_tarifa, main = "Pronóstico de Tarifa Promedio")
+```
+
