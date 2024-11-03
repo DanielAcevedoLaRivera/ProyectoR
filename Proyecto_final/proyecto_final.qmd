@@ -4,9 +4,17 @@ format: html
 editor: visual
 ---
 
-### **Proyección de ocupación**
+###Introducción
 
-```{r, error = FALSE, warning = FALSE, message = FALSE}
+El siguiente codigo tiene por fin ser un aporte en la toma de desiciones, principalmente en el desarrollo de presupuestos y control de las ventas de un hotel, para ello se considerera una serie temporal de su ocupación y tarifa promedio, para ello se utilizará un modelo SARIMA, el cual será construido y validado a lo largo del informe. Por lo que el plan de desarrollo del codigo se basa en el siguiente diagrama, que señala el proceso de la construcción del codigo y su supervisión mensual.
+
+![Diagrama del proyecto](diagrama_proyecto.png) Los datos recopilados fueron obtenidos desde un archivo xlsx, con información de la ocupacion promedio y la tarifa promedio, en valores diarios, estos fueron agrupados por mes y utilizados como base de las series de tiempo. Se aplicará el modelo X-13ARMIMA para determinar las variables del modelo a emplear y se realizaran las pruebas de normalidad, homoscelisticidad e independencia, en caso de que alguna no cuente con las propiedades necesarias en sus residuos para validar el modelo, se ajustará el mismo con metolodogias BoxCox y se volveran a evaluar los indicadores. Despues se aplicara el modelo para la ocupación y la tarifa promedio, para proyectar ingresos futuros por las venta en habitaciones.
+
+### **Proyección de ingresos hotel**
+
+##Librerias utilizadas
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
 library(stringr)
 library(readxl)
 library(dplyr)
@@ -14,7 +22,19 @@ library(ggplot2)
 library(lubridate)
 library(forecast)
 library(tseries)
+library(lmtest)
+library(seasonal)
+library(astsa)
+library(quantmod)
+library(TSA)
+library(Quandl)
+library(dynlm)
+library(rugarch)
+library(scales)
+library(zoo)
 ```
+
+\##**Moldeando la base de información**
 
 En primer lugar se extraen la información de los excel en la carpeta de trabajo periodos entre en 2016 y septiembre del 2024.
 
@@ -72,50 +92,244 @@ ocupacion1 <- ocupacion1 %>%
 sapply(ocupacion1, class)
 ```
 
-```{r}
-head(ocupacion1)
-```
-
-Primero hay que validar si la serie tiene caracteristicas de no estacionarias, para ello se debe rechazar la hipostesis nula, a través de la medición del p.valor, si es p.valor \<0.05, se considera una serie estacionaria
+Otro paso es agrupar los datos de manera mensual para el analisis y se conforma la serie temporal mensual.
 
 ```{r}
-# Transformar los datos en una serie temporal diaria para cada variable
-# Filtrar solo las columnas necesarias para el análisis
-ocupacion_ts <- ts(ocupacion1$CF_OCCUPANCY, start = c(2016, 1), frequency = 365)
-tarifa_ts <- ts(ocupacion1$CF_AVERAGE_ROOM_RATE, start = c(2016, 1), frequency = 365)
+# Agrupar por año y mes y calcular el promedio de cada mes
+ocupacion_mensual <- ocupacion1 %>%
+  group_by(Fecha = floor_date(CONSIDERED_DATE, "month")) %>%
+  summarize(
+    Promedio_Ocupacion = mean(CF_OCCUPANCY, na.rm = TRUE),
+    Promedio_Tarifa = mean(CF_AVERAGE_ROOM_RATE, na.rm = TRUE),
+    .groups = 'drop'
+  )
 
-# Análisis ARIMA para la serie de ocupación promedio
-# 1. Diferenciar la serie para asegurar que sea estacionaria
-adf_test_ocupacion <- adf.test(ocupacion_ts)  # Prueba de raíz unitaria
-adf_test_tarifa <- adf.test(tarifa_ts)  # Prueba de raíz unitaria
+# Convertir la columna 'Fecha' a tipo Date (si aún no lo está)
+ocupacion_mensual <- ocupacion_mensual %>%
+  mutate(Fecha = as.Date(Fecha))
+#ocupacion_mensual <- ocupacion_mensual %>%
+  #filter(year(Fecha) < 2020)
+# Crear la serie temporal con frecuencia mensual (12)
+ts_ocupacion_mensual <- ts(ocupacion_mensual$Promedio_Ocupacion, 
+                           start = c(year(min(ocupacion_mensual$Fecha)), month(min(ocupacion_mensual$Fecha))), 
+                           frequency = 12)
+# Calcular el promedio de la serie excluyendo los ceros
+mean_ocupacion <- mean(ts_ocupacion_mensual[ts_ocupacion_mensual != 0], na.rm = TRUE)
 
-print(adf_test_ocupacion)
-print(adf_test_tarifa)
+# Reemplazar los valores de 0 con el promedio
+ts_ocupacion_mensual[ts_ocupacion_mensual == 0] <- mean_ocupacion #Periodo donde el hotel estuvo cerrado por 
+# Verificar la serie temporal
+plot(ts_ocupacion_mensual, main = "Ocupación Mensual", ylab = "Tasa de Ocupación", xlab = "Tiempo", col = "blue", type = "o")
+
+```
+
+\##**Modelo SARIMA**
+
+Para la elaboracion de los parametros del modelo se aplicara la medotologia X-13ARIMA, a traves de la funcion seas, para determinar sus p,d,q,P,D,Q.
+
+```{r}
+
+# Ajustar un modelo x13arima a una serie temporal
+modelo <- seas(ts_ocupacion_mensual)
+
+# Resumen del modelo ajustado
+summary(modelo)
 ```
 
 ```{r}
-# Prueba de correlación
-resultado_cor_test <- cor.test(ocupacion_ts, tarifa_ts, method = "pearson")
+modelo2 <- Arima(ts_ocupacion_mensual, 
+                       order = c(1, 0, 1), 
+                       seasonal = list(order = c(0, 1, 1), period = 12))
+summary(modelo2)  # Resumen del modelo ajustado
+```
 
-# Imprimir resultados de la prueba
-print(resultado_cor_test)
+Se realiza la prueba de estacionaridad Dickey-Fuller, donde un p-value \<0.05 significa que la serie de tiempo cuenta con esta caracteristica, en este caso al ser mayor los datos se deben diferenciar.
+
+```{r}
+
+residuals=resid(modelo2)
+
+adf.test(residuals)
+
+```
+
+Ahora se comprueban que el modelo cumpla con las propiedades de los residuos: -Normalidad, por lo que se enciente que el modelo debe seguir el comportamiento de una distribución normal. -Independencia, es decir que los residuos sean independientres entre si. -Homoscedasticidad, por lo que la varianza debe ser constante en el tiempo.
+
+Primero se realiza la prueba de normalidad, la cual arroja un p-value muy cercano a cero, para evidenciar la existencia de la normalidad el valor debe ser \<0.05, por lo que se procede a ajustar el modelo a traves de un proceso de BoxCox.
+
+```{r}
+# Suponiendo que 'modelo2' es tu modelo ajustado y ya tienes los residuos
+residuos <- residuals(modelo2)
+# 2. Prueba de normalidad: Jarque-Bera
+jarque_bera_test <- jarque.bera.test(residuos)
+print(jarque_bera_test)
 ```
 
 ```{r}
-# Gráfico de dispersión
-plot(ocupacion_ts, tarifa_ts,
-     xlab = "Ocupación Promedio",
-     ylab = "Tarifa Promedio",
-     main = "Correlación entre Ocupación y Tarifa Promedio")
-abline(lm(tarifa_ts ~ ocupacion_ts), col = "red")  # Línea de regresión
+# Calcular el valor óptimo de lambda
+lambda <- BoxCox.lambda(ts_ocupacion_mensual)
+# Transformar la serie temporal usando la transformación de Box-Cox
+ts_ocupacion_mensual_boxcox <- BoxCox(ts_ocupacion_mensual, lambda)
+# Ajustar el modelo SARIMA a la serie transformada
+modelo_boxcox <- Arima(ts_ocupacion_mensual_boxcox, 
+                        order = c(1, 0, 1), 
+                        seasonal = list(order = c(0, 1, 1), period = 12))
+summary(modelo_boxcox)  # Resumen del modelo ajustado
 ```
 
 ```{r}
-# Gráfico de autocorrelación parcial para ocupacion_ts
-pacf(ocupacion_ts, main = "Gráfico de Autocorrelación Parcial para Ocupación Promedio")
-
-# Gráfico de autocorrelación parcial para tarifa_ts
-pacf(tarifa_ts, main = "Gráfico de Autocorrelación Parcial para Tarifa Promedio")
+residuals_boxcox <- residuals(modelo_boxcox)
+adf.test(residuals_boxcox)  # Prueba de Dickey-Fuller
 ```
 
+```{r}
+# 2. Prueba de normalidad: Jarque-Bera
+jarque_bera_test2 <- jarque.bera.test(residuals_boxcox)
+print(jarque_bera_test2)
+```
 
+Si bien no se obtuvo un p-value mayor a 0.05, el modelo ajustado por BoxCox se aproxima más al valor deseado, por lo que se continua con este modelo y se le realiza la prueba de independencia, si el p-vlau es \>0.05 se asume que el modelo cumple con la independencia de sus residuos.
+
+```{r}
+# 3. Prueba de independencia: Ljung-Box
+ljung_box_test <- Box.test(residuals_boxcox, type = "Ljung-Box")
+print(ljung_box_test)
+```
+
+Conforme al anterior analisis se realiza la prueba de homoscedasticidad, revisando la variación de la serie, ya que el p-value es \>0.05 indica que los residuos no presentan heterocedasticidad, por lo que se ajusta bien al modelo.
+
+```{r}
+# Crear un modelo lineal con los residuos
+modelo_lineal_residuos <- lm(residuals_boxcox ~ fitted(modelo2))
+
+# Realizar la prueba de Breusch-Pagan
+
+bptest_result <- bptest(modelo_lineal_residuos)
+print(bptest_result)
+```
+
+```{r}
+# 3. Realizar la proyección
+proy_boxcox <- forecast(modelo_boxcox, h = 12)
+
+# 4. Aplicar la transformación inversa a los resultados de la proyección
+proy_ocu <- InvBoxCox(proy_boxcox$mean, lambda)
+
+# Realizar una proyección a 12 meses con el modelo SARIMA
+
+plot(proy_ocu, main = "Pronóstico de Ocupación Mensual con SARIMA",
+     xlab = "Mes", ylab = "Ocupación Hotelera")
+```
+
+Se realiza el mismo proceso para la tarifa promedio, con el fin de unir ambas proyecciones y determinar un posible ingreso por venta de habitaciones, en un preiodo de 12 meses a futuro.
+
+```{r}
+
+ts_tarifa_prom <- ts(ocupacion_mensual$Promedio_Tarifa, 
+                     start = c(year(min(ocupacion_mensual$Fecha)), month(min(ocupacion_mensual$Fecha))), 
+                     frequency = 12)
+# Calcular el promedio de la serie excluyendo los ceros
+mean_tarifa <- mean(ts_tarifa_prom[ts_tarifa_prom != 0], na.rm = TRUE)
+ts_tarifa_prom[ts_tarifa_prom == 0] <- mean_tarifa #Periodo donde el hotel estuvo cerrado por pandemia
+# Ajustar un modelo x13arima a una serie temporal
+modelot <- seas(ts_tarifa_prom)
+
+# Resumen del modelo ajustado
+summary(modelot)
+```
+
+```{r}
+modelot <- Arima(ts_tarifa_prom, 
+                       order = c(0, 1, 0), 
+                       seasonal = list(order = c(1, 0, 1), period = 12))
+summary(modelot)  # Resumen del modelo ajustado
+```
+
+```{r}
+
+
+residuals=resid(modelot)
+
+adf.test(residuals)
+
+```
+
+```{r}
+proyec_tarif = forecast(modelot, h =12)
+proyec_tarif
+
+```
+
+\##**Proyección de los ingresos**
+
+Una vez validado ambos modelos se procede a tranformar la ocupación en habitaciones, para multiplicar por la proyeccion de tarifa promedio, asi visualizar los posibles ingresos por concepto de venta de habitaciones del hotel.
+
+```{r}
+# Paso 1: Calcular habitaciones proyectadas
+habitaciones_proyectadas <- round(proy_ocu * 67 * 30, 0)  # Multiplica ocupación proyectada por habitaciones y días, luego redondea
+
+# Paso 2: Crear un data frame con las proyecciones
+df_proyecciones <- data.frame(
+  Mes = time(proy_boxcox$mean),                   # Extrae los tiempos de la proyección
+  Habitaciones_Proyectadas = habitaciones_proyectadas,  # Calcula habitaciones proyectadas
+  Proyect_Tarifa = proyec_tarif$mean               # Agrega la proyección de tarifas
+)
+
+# Paso 3: Calcular los ingresos potenciales
+df_proyecciones <- df_proyecciones %>%
+  mutate(Ingresos_Potenciales = Habitaciones_Proyectadas * Proyect_Tarifa)  # Calcula los ingresos
+
+# Paso 4: Visualizar los resultados
+print(df_proyecciones)
+
+
+```
+
+Por ultimo se grafica la proyeccion de ventas de habitaciones.
+
+```{r}
+
+# Asegúrate de que 'Mes' sea una serie de tiempo y extrae las fechas
+df_proyecciones <- df_proyecciones %>%
+  mutate(Mes = as.Date(as.yearmon(Mes)))  # Convertir ts a Date usando zoo
+
+# Paso 1: Calcular ingresos potenciales en millones
+df_proyecciones <- df_proyecciones %>%
+  mutate(Ingresos_Potenciales_Millones = Ingresos_Potenciales / 1e6)  # Divide por 1,000,000
+
+# Paso 2: Graficar los ingresos potenciales en millones
+ggplot(df_proyecciones, aes(x = Mes, y = Ingresos_Potenciales_Millones)) +
+  geom_line(color = "#0072B2", size = 1.2) +  # Cambiar color y aumentar el tamaño de la línea
+  geom_point(color = "#D55E00", size = 3) +  # Cambiar color de los puntos
+  geom_text(aes(label = round(Ingresos_Potenciales_Millones, 1)), 
+            vjust = -0.5, 
+            size = 3.5, 
+            color = "#D55E00", 
+            check_overlap = TRUE) +  # Etiquetas en puntos
+  labs(title = "Ingresos Potenciales por Venta de Habitaciones (en Millones)",
+       x = "Mes",
+       y = "Ingresos Potenciales ($ Millones)") +
+  theme_minimal(base_size = 14) +  # Usar tema minimalista y aumentar el tamaño de base
+  scale_y_continuous(labels = dollar_format(scale = 1e-6, suffix = "M")) +  # Formato en millones
+  scale_x_date(date_breaks = "1 month", date_labels = "%b", expand = c(0, 0)) +  # Personalizar el eje X
+  theme(
+    plot.title = element_text(hjust = 0.5, face = "bold", size = 16, color = "#2A2A2A"),  # Centrar título y cambiar estilo
+    axis.title.x = element_text(face = "bold", size = 14, color = "#2A2A2A"),  # Título eje X
+    axis.title.y = element_text(face = "bold", size = 14, color = "#2A2A2A"),  # Título eje Y
+    axis.text.x = element_text(angle = 45, hjust = 1, color = "#2A2A2A"),  # Etiquetas eje X
+    axis.text.y = element_text(color = "#2A2A2A"),  # Etiquetas eje Y
+    panel.grid.major = element_line(color = "#D9D9D9"),  # Color de las líneas de la cuadrícula
+    panel.grid.minor = element_blank(),  # Eliminar líneas de cuadrícula menores
+    legend.position = "none"  # Ocultar leyenda si no es necesaria
+  )
+```
+
+\##**Monitoreo y mejoras**
+
+Tras realizar el código, como primera mejora se propone encontrar el ajuste necesario para cumplir con todos los principios estadísticos, ya que la prueba de normalidad no fue satisfactoria. En el futuro, se sugiere fortalecer las bases teóricas para sustentar el modelo. Aunque inicialmente se pretende proyectar futuros ingresos, se considera tomar este modelo como base e implementar herramientas de machine learning supervisado, con el fin de desarrollar un modelo que apoye la toma de decisiones sobre el valor de una habitación, en un entorno de tarifas dinámicas, aprovechando los intervalos de demanda y ajustando los precios para maximizar la rentabilidad.
+
+El modelo se revisará mensualmente, contrastando la información proyectada con la real y estimando variaciones en el modelo que se adapten a la nueva realidad. Además, se explorará un mejor método para considerar el período en que el hotel estuvo cerrado por la pandemia, ya que actualmente se ha aplicado el promedio de la serie para los valores en 0.
+
+Finalmente, los valores obtenidos reflejan tres realidades: período prepandemia, pandemia y pospandemia. Dado el volumen de información posible de recopilar, se sugiere que el modelo vuelva a evaluarse una vez que se disponga de al menos 50 datos posteriores a 2022, para obtener una muestra más representativa de la situación actual del negocio.
+
+Por último, cabe señalar que el pronóstico muestra valores que, a primera vista, concuerdan con la realidad del negocio.

@@ -1,0 +1,259 @@
+---
+title: "Proyecto_final"
+format: html
+editor: visual
+---
+
+### **Proyección de ocupación**
+
+```{r}
+
+
+library(stringr)
+library(readxl)
+library(dplyr)
+library(ggplot2)
+library(lubridate)
+library(forecast)
+library(tseries)
+library(lmtest)
+library(seasonal)
+library(astsa)
+library(foreign)
+library(quantmod)
+```
+
+```{r}
+# Cargar los datos
+data1 <- read_excel("history.xlsx")
+head(data1)
+```
+
+
+```{r}
+# Seleccionar y transformar columnas
+ocupacion <- data1 %>% select(CONSIDERED_DATE, NO_ROOMS, CF_OCCUPANCY, CF_AVERAGE_ROOM_RATE) %>%
+  mutate(CONSIDERED_DATE = str_replace_all(CONSIDERED_DATE, c("JAN" = "01", "FEB" = "02", "MAR" = "03", 
+                                                                "APR" = "04", "MAY" = "05", "JUN" = "06", 
+                                                                "JUL" = "07", "AUG" = "08", "SEP" = "09", 
+                                                                "OCT" = "10", "NOV" = "11", "DEC" = "12")))
+
+head(ocupacion)
+```
+
+```{r}
+# Consultar tipo de información
+sapply(ocupacion, class)
+
+# Modificar tipos de datos
+ocupacion1 <- ocupacion %>%
+  mutate(CF_OCCUPANCY = as.numeric(gsub("%", "", CF_OCCUPANCY)) / 100,
+         CF_AVERAGE_ROOM_RATE = as.numeric(CF_AVERAGE_ROOM_RATE),
+         CF_OCCUPANCY = round(CF_OCCUPANCY, 2),
+         CF_AVERAGE_ROOM_RATE = round(CF_AVERAGE_ROOM_RATE, 0)) %>%
+  mutate(CONSIDERED_DATE = dmy(CONSIDERED_DATE))
+
+sapply(ocupacion1, class)
+```
+
+```{r}
+# Agrupar los datos mensualmente
+ocupacion_mensual <- ocupacion1 %>%
+  group_by(Fecha = floor_date(CONSIDERED_DATE, "month")) %>%
+  summarize(Promedio_Ocupacion = mean(CF_OCCUPANCY, na.rm = TRUE),
+            Promedio_Tarifa = mean(CF_AVERAGE_ROOM_RATE, na.rm = TRUE),
+            .groups = 'drop') %>%
+  mutate(Fecha = as.Date(Fecha)) %>%
+  filter(year(Fecha) >= 2022)
+
+ts_ocupacion_mensual <- ts(ocupacion_mensual$Promedio_Ocupacion, 
+                           start = c(year(min(ocupacion_mensual$Fecha)), month(min(ocupacion_mensual$Fecha))), 
+                           frequency = 12)
+
+# Verificar la serie temporal
+plot(ts_ocupacion_mensual, main = "Ocupación Mensual", ylab = "Tasa de Ocupación", xlab = "Tiempo", col = "blue", type = "o")
+```
+
+```{r}
+# Test de Estacionariedad
+adf.test(ts_ocupacion_mensual, alternative = "stationary")
+```
+
+```{r}
+# Transformación logarítmica
+serielog = log(ts_ocupacion_mensual)
+plot(serielog)
+adf.test(serielog, alternative = "stationary")
+```
+
+```{r}
+# Aplicar 2 diferencias
+seriedif = diff(ts_ocupacion_mensual, differences=2)
+plot(seriedif, type= "o", lty = "dashed", col = "red", main = "Serie de tiempo ocupación mensual")
+```
+
+```{r}
+# Test de estacionariedad
+adf.test(seriedif, alternative = "stationary")
+```
+
+```{r}
+# Autocorrelación
+par(mfrow=c(2,1), mar = c(4,4,4,1)+.1)
+acf(seriedif)  # ACF para la serie diferenciada
+pacf(seriedif) # PACF para determinar el número de componentes AR y MA
+```
+
+```{r}
+# Test de Ljung-Box
+Box.test(residuals(modelo), type = "Ljung-Box")  # Comprobar dependencia temporal
+```
+
+```{r}
+# Modelo ARIMA
+modelo = arima(ts_ocupacion_mensual, order =c(3,2,3))  # Elegir orden basado en ACF/PACF
+tsdiag(modelo)  # Diagnóstico del modelo
+```
+
+```{r}
+# Validación de supuestos
+error = residuals(modelo)
+# Histograma para comprobar normalidad
+hist(error, breaks = 20, main = "Histograma de Residuos", xlab = "Residuos", col = "lightblue")
+```
+
+```{r}
+# Q-Q plot para comprobar normalidad
+qqnorm(residuals(modelo))
+qqline(residuals(modelo), col = "red")
+```
+
+```{r}
+# Test de Jarque-Bera para normalidad
+
+jarque.bera.test(error)
+```
+
+```{r}
+# Test de independencia de los residuos
+Box.test(residuals(modelo), type = "Ljung-Box")
+```
+
+```{r}
+residuos <- residuals(modelo)
+modelo_lineal <- lm(residuos ~ seq_along(residuos))  # Ajustar un modelo lineal simple
+
+# Test de homocedasticidad - Breusch-Pagan
+bptest(modelo_lineal)
+```
+
+```{r}
+# Pronóstico
+pronostico <- forecast::forecast(modelo, h = 12, level = 95)
+plot(pronostico, main = "Pronóstico de ocupación hotelera a 12 meses", 
+     ylab = "Tasa de Ocupación", xlab = "Tiempo", 
+     flcol = "lightblue", fcol = "blue", shadecol = "lightgray")
+
+# Generación de Escenarios
+cambios_tarifa <- seq(-0.1, 0.1, by = 0.05)  # Cambios de -10% a +10%
+escenarios <- expand.grid(cambio_ocupacion = cambios_tarifa, cambio_tarifa = cambios_tarifa)
+
+# Generación de Escenarios
+cambios_tarifa <- seq(-0.1, 0.1, by = 0.05)  # Cambios de -10% a +10%
+escenarios <- expand.grid(cambio_ocupacion = cambios_tarifa, cambio_tarifa = cambios_tarifa)
+
+# Preparar un dataframe vacío para almacenar resultados
+resultados <- data.frame()
+
+# Aplicar los cambios a los pronósticos para cada escenario
+for (i in seq_along(pronostico$mean)) {
+  # Obtener el pronóstico actual
+  precio_actual <- pronostico$mean[i]
+  
+  # Calcular los precios y ocupaciones estimados para el escenario actual
+  precios_estimados <- precio_actual * (1 + escenarios$cambio_tarifa)
+  ocupaciones_estimadas <- precio_actual * (1 + escenarios$cambio_ocupacion)
+  
+  # Combinar resultados en un dataframe temporal
+  temp_resultados <- data.frame(precio_estimado = precios_estimados, 
+                                 ocupacion_estimado = ocupaciones_estimadas,
+                                 mes = rep(i, nrow(escenarios)))  # Indicar el mes correspondiente
+  
+  # Agregar a los resultados finales
+  resultados <- rbind(resultados, temp_resultados)
+}
+
+# Combinar los resultados con los escenarios
+escenarios <- cbind(escenarios, resultados)
+
+print(escenarios)
+
+```
+
+##Test de Estacionaeriedad
+
+Se revisara la serie de tiempo, en base a la prueba de Dickey-Fuller, la cual si arroja un p-value \>0.05, se puede determinar que en la serie existe estacionariedad, en primera instancia la serie cuenta con un p-value de 0.2938, por lo que se realizaran ajustes a la seria para determinar si es posible encontrar la estacionaridad en sus diferencias o logaritmos.
+```{r}
+
+adf.test(ts_ocupacion_mensual, alternative = "stationary")
+```
+
+```{r}
+serielog = log(ts_ocupacion_mensual)
+plot(serielog)
+```
+
+```{r}
+adf.test(serielog, alternative = "stationary")
+```
+
+Se aplican 2 diferencias, ya que es en esta variable que en la prueba de Dickey-Fuller de un p-valeu \>0.05, por lo que otorga a la serie de tiempo la cualidad de estacionariedad.
+
+```{r}
+seriedif = diff(ts_ocupacion_mensual, differences=2)
+plot(seriedif, type= "o", lty = "dashed", col = "red", main = "Serie de tiempo ocupación mensual")
+#agregar linea de tendnecia
+```
+
+```{r}
+adf.test(seriedif, alternative = "stationary")
+```
+
+Por lo que en sus diferencias se encuentra la estacionaridad.
+
+```{r}
+plot(seriedif)
+```
+
+##Auto correlacion
+
+```{r}
+par(mfrow=c(2,1), mar = c(4,4,4,1)+.1)
+acf(ts(seriedif, frequency = 1 )) #medias moviles
+pacf(ts(seriedif, frequency = 1 )) #n° de autoregresivos
+
+
+```
+
+
+```{r}
+modelo = arima(ts_ocupacion_mensual, order =c(2,0,0))
+modelo
+```
+
+```{r}
+tsdiag(modelo)
+
+```
+
+```{r}
+Box.test(residuals(modelo), type = "Ljung-Box")
+```
+
+```{r}
+error = residuals(modelo)
+plot(error)
+qqnorm(residuals(modelo))
+qqline(residuals(modelo), col = "red")
+```
+

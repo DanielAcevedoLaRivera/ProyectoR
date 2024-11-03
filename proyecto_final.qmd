@@ -1,0 +1,155 @@
+---
+title: "Proyecto_final"
+format: html
+editor: visual
+---
+
+### **Proyección de ocupación**
+
+```{r, error = FALSE, warning = FALSE, message = FALSE}
+library(stringr)
+library(readxl)
+library(dplyr)
+library(ggplot2)
+library(lubridate)
+library(forecast)
+library(tseries)
+```
+
+En primer lugar se extraen la información de los excel en la carpeta de trabajo periodos entre en 2016 y septiembre del 2024.
+
+```{r}
+data1 <- read_excel("history.xlsx")
+
+head(data1)
+```
+
+Es este apartado se busca extraer las columnas que se utilizaran desde history.xlsx y se busca transformar la columna "CONSIDERED_DATE" en fecha, revisando las primeras 6 filas de información.
+
+```{r}
+
+ocupacion = data1 %>% select(CONSIDERED_DATE,
+                                    NO_ROOMS,
+                                    CF_OCCUPANCY,
+                                    CF_AVERAGE_ROOM_RATE)
+ocupacion <- ocupacion %>%
+  mutate(CONSIDERED_DATE = str_replace_all(
+    CONSIDERED_DATE,
+    c("JAN" = "01", "FEB" = "02", "MAR" = "03", 
+      "APR" = "04", "MAY" = "05", "JUN" = "06", 
+      "JUL" = "07", "AUG" = "08", "SEP" = "09", 
+      "OCT" = "10", "NOV" = "11", "DEC" = "12")
+  ))
+
+
+head(ocupacion)
+```
+
+En este apartado se consulta por el tipo de información que aporta el df ocupacion.
+
+```{r}
+sapply(ocupacion, class)
+```
+
+Ahora se modifican los tipos de datos para comenzar a crear el modelo ARIMA
+
+```{r}
+ocupacion1 <- ocupacion %>%
+  mutate(
+   # Convertir CF_OCCUPANCY a numérico; quitar símbolos no numéricos como '%'
+    CF_OCCUPANCY = as.numeric(gsub("%", "", CF_OCCUPANCY)) / 100,
+    
+    # Convertir CF_AVERAGE_ROOM_RATE a numérico
+    CF_AVERAGE_ROOM_RATE = as.numeric(CF_AVERAGE_ROOM_RATE),
+    
+    # Redondear los valores numéricos a 2 decimales
+    CF_OCCUPANCY = round(CF_OCCUPANCY, 2),
+    CF_AVERAGE_ROOM_RATE = round(CF_AVERAGE_ROOM_RATE, 0)
+  )
+ocupacion1 <- ocupacion1 %>%
+  mutate(CONSIDERED_DATE = dmy(CONSIDERED_DATE))  # dmy() convierte de día-mes-año a Date
+
+sapply(ocupacion1, class)
+```
+
+```{r}
+head(ocupacion1)
+```
+
+Primero hay que validar si la serie tiene caracteristicas de no estacionarias, para ello se debe rechazar la hipostesis nula, a través de la medición del p.valor, si es p.valor \<0.05, se considera una serie estacionaria
+
+```{r}
+# Transformar los datos en una serie temporal diaria para cada variable
+# Filtrar solo las columnas necesarias para el análisis
+ocupacion_ts <- ts(ocupacion1$CF_OCCUPANCY, start = c(2016, 1), frequency = 365)
+tarifa_ts <- ts(ocupacion1$CF_AVERAGE_ROOM_RATE, start = c(2016, 1), frequency = 365)
+
+# Análisis ARIMA para la serie de ocupación promedio
+# 1. Diferenciar la serie para asegurar que sea estacionaria
+adf_test_ocupacion <- adf.test(ocupacion_ts)  # Prueba de raíz unitaria
+adf_test_tarifa <- adf.test(tarifa_ts)  # Prueba de raíz unitaria
+
+print(adf_test_ocupacion)
+print(adf_test_tarifa)
+```
+
+```{r}
+# Prueba de correlación
+resultado_cor_test <- cor.test(ocupacion_ts, tarifa_ts, method = "pearson")
+
+# Imprimir resultados de la prueba
+print(resultado_cor_test)
+```
+
+```{r}
+# Gráfico de dispersión
+plot(ocupacion_ts, tarifa_ts,
+     xlab = "Ocupación Promedio",
+     ylab = "Tarifa Promedio",
+     main = "Correlación entre Ocupación y Tarifa Promedio")
+abline(lm(tarifa_ts ~ ocupacion_ts), col = "red")  # Línea de regresión
+```
+
+```{r}
+# Gráfico de autocorrelación parcial para ocupacion_ts
+pacf(ocupacion_ts, main = "Gráfico de Autocorrelación Parcial para Ocupación Promedio")
+
+# Gráfico de autocorrelación parcial para tarifa_ts
+pacf(tarifa_ts, main = "Gráfico de Autocorrelación Parcial para Tarifa Promedio")
+```
+
+```{r}
+
+#Convertir la columna 'CONSIDERED_DATE' a tipo Date
+ocupacion$CONSIDERED_DATE <- as.Date(ocupacion$CONSIDERED_DATE)
+
+#Agrupar datos diarios por mes
+ocupacion_mensual <- ocupacion %>%
+  group_by(Fecha = floor_date(CONSIDERED_DATE, "month")) %>%
+  summarize(prom_ocupacion = mean(CF_OCCUPANCY, na.rm = TRUE), .groups = 'drop')
+
+#Crear un objeto de serie temporal con los datos de ocupación mensual
+ts_ocupacion_mensual <- ts(ocupacion_mensual$prom_ocupacion, frequency = 12, start = c(2021, 11))
+
+#Ajustar un modelo ARIMA
+modelo_arima <- auto.arima(ts_ocupacion_mensual)
+
+#Hacer predicciones para los próximos 12 meses
+predicciones <- forecast(modelo_arima, h = 12)
+
+summary(predicciones)
+```
+
+```{r}
+
+# Graficar las predicciones con etiquetas
+autoplot(predicciones) +
+  geom_text(aes(x = time(predicciones$mean), y = predicciones$mean, label = round(predicciones$mean, 1)), 
+            vjust = -0.5, size = 2) +  # Ajusta el tamaño de la fuente y la posición vertical
+  labs(title = "Proyección Mensual de Ocupación del Hotel", 
+       x = "Fecha", 
+       y = "Ocupación Promedio (%)") +
+  theme_minimal()
+```
+
+#filtro x13-arima para quitar estacionalidad #componentes #autocorrelacion // parcial #test, dpendincia temporal , Ljung-Box #si los rezagos tienen dependencia temporal - orden del modelo tentativo, cuantas componentes AR O MA puede tener la serie #forecast x mes con nivel de confinza del 95% #en vez de utilizar el precio promedio, generar escenarios posibles #Matriz cuanto sube o cuanto baja el valor de la hab, cuando el precio va bajando y otro subiendo #calcular el precio optimo #concatenacion de 3 escenarios #validacion supuesto normalidad de los residuos // residuos deben cumplir - ser normales (histograma) test - que sean independientes (residuo no hay informacion encapsulada en la serie de tiempo) test independencia - prueba homoelasticidad de estacionalidad (Test Jarque-Bera (normlalidad), test independencia (ljung-box), test de estacionaridad de los residuos (Brusch-Pagan))

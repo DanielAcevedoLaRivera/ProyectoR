@@ -1,0 +1,1023 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.4.555">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>Proyecto_final</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="proyecto_final_files/libs/clipboard/clipboard.min.js"></script>
+<script src="proyecto_final_files/libs/quarto-html/quarto.js"></script>
+<script src="proyecto_final_files/libs/quarto-html/popper.min.js"></script>
+<script src="proyecto_final_files/libs/quarto-html/tippy.umd.min.js"></script>
+<script src="proyecto_final_files/libs/quarto-html/anchor.min.js"></script>
+<link href="proyecto_final_files/libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="proyecto_final_files/libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="proyecto_final_files/libs/bootstrap/bootstrap.min.js"></script>
+<link href="proyecto_final_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="proyecto_final_files/libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+
+
+</head>
+
+<body class="fullcontent">
+
+<div id="quarto-content" class="page-columns page-rows-contents page-layout-article">
+
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">Proyecto_final</h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<p>###Introducción</p>
+<p>El siguiente codigo tiene por fin ser un aporte en la toma de desiciones, principalmente en el desarrollo de presupuestos y control de las ventas de un hotel, para ello se considerera una serie temporal de su ocupación y tarifa promedio, para ello se utilizará un modelo SARIMA, el cual será construido y validado a lo largo del informe. Por lo que el plan de desarrollo del codigo se basa en el siguiente diagrama, que señala el proceso de la construcción del codigo y su supervisión mensual.</p>
+<p><img src="diagrama_proyecto.png" class="img-fluid" alt="Diagrama del proyecto"> Los datos recopilados fueron obtenidos desde un archivo xlsx, con información de la ocupacion promedio y la tarifa promedio, en valores diarios, estos fueron agrupados por mes y utilizados como base de las series de tiempo. Se aplicará el modelo X-13ARMIMA para determinar las variables del modelo a emplear y se realizaran las pruebas de normalidad, homoscelisticidad e independencia, en caso de que alguna no cuente con las propiedades necesarias en sus residuos para validar el modelo, se ajustará el mismo con metolodogias BoxCox y se volveran a evaluar los indicadores. Despues se aplicara el modelo para la ocupación y la tarifa promedio, para proyectar ingresos futuros por las venta en habitaciones.</p>
+<section id="proyección-de-ingresos-hotel" class="level3">
+<h3 class="anchored" data-anchor-id="proyección-de-ingresos-hotel"><strong>Proyección de ingresos hotel</strong></h3>
+<p>##Librerias utilizadas</p>
+<p>##<strong>Moldeando la base de información</strong></p>
+<p>En primer lugar se extraen la información de los excel en la carpeta de trabajo periodos entre en 2016 y septiembre del 2024.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>data1 <span class="ot">&lt;-</span> <span class="fu">read_excel</span>(<span class="st">"history.xlsx"</span>)</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(data1)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 6 × 76
+  GPAGEID REC_TYPE REC_TYPE_DESC   REVENUE NO_ROOMS IND_DEDUCT_ROOMS
+  &lt;lgl&gt;   &lt;chr&gt;    &lt;chr&gt;             &lt;dbl&gt;    &lt;dbl&gt;            &lt;dbl&gt;
+1 NA      A_STAT   History       13597956.       58               58
+2 NA      A_STAT   History        8720565.       47               47
+3 NA      A_STAT   History        3854907        25               25
+4 NA      A_STAT   History        2926796        22               22
+5 NA      A_STAT   History        3529094        29               29
+6 NA      A_STAT   History        4601446        35               35
+# ℹ 70 more variables: IND_NON_DEDUCT_ROOMS &lt;dbl&gt;, GRP_DEDUCT_ROOMS &lt;dbl&gt;,
+#   GRP_NON_DEDUCT_ROOMS &lt;dbl&gt;, NO_PERSONS &lt;dbl&gt;, ARRIVAL_ROOMS &lt;dbl&gt;,
+#   DEPARTURE_ROOMS &lt;dbl&gt;, COMPLIMENTARY_ROOMS &lt;dbl&gt;, HOUSE_USE_ROOMS &lt;dbl&gt;,
+#   DAY_USE_ROOMS &lt;dbl&gt;, NO_SHOW_ROOMS &lt;dbl&gt;, INVENTORY_ROOMS &lt;dbl&gt;,
+#   CONSIDERED_DATE &lt;chr&gt;, CHAR_CONSIDERED_DATE &lt;chr&gt;,
+#   IND_DEDUCT_REVENUE &lt;dbl&gt;, IND_NON_DEDUCT_REVENUE &lt;dbl&gt;,
+#   GRP_NON_DEDUCT_REVENUE &lt;dbl&gt;, GRP_DEDUCT_REVENUE &lt;dbl&gt;, …</code></pre>
+</div>
+</div>
+<p>Es este apartado se busca extraer las columnas que se utilizaran desde history.xlsx y se busca transformar la columna “CONSIDERED_DATE” en fecha, revisando las primeras 6 filas de información.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>ocupacion <span class="ot">=</span> data1 <span class="sc">%&gt;%</span> <span class="fu">select</span>(CONSIDERED_DATE,</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>                                    NO_ROOMS,</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>                                    CF_OCCUPANCY,</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>                                    CF_AVERAGE_ROOM_RATE)</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>ocupacion <span class="ot">&lt;-</span> ocupacion <span class="sc">%&gt;%</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">CONSIDERED_DATE =</span> <span class="fu">str_replace_all</span>(</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>    CONSIDERED_DATE,</span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>    <span class="fu">c</span>(<span class="st">"JAN"</span> <span class="ot">=</span> <span class="st">"01"</span>, <span class="st">"FEB"</span> <span class="ot">=</span> <span class="st">"02"</span>, <span class="st">"MAR"</span> <span class="ot">=</span> <span class="st">"03"</span>, </span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>      <span class="st">"APR"</span> <span class="ot">=</span> <span class="st">"04"</span>, <span class="st">"MAY"</span> <span class="ot">=</span> <span class="st">"05"</span>, <span class="st">"JUN"</span> <span class="ot">=</span> <span class="st">"06"</span>, </span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>      <span class="st">"JUL"</span> <span class="ot">=</span> <span class="st">"07"</span>, <span class="st">"AUG"</span> <span class="ot">=</span> <span class="st">"08"</span>, <span class="st">"SEP"</span> <span class="ot">=</span> <span class="st">"09"</span>, </span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>      <span class="st">"OCT"</span> <span class="ot">=</span> <span class="st">"10"</span>, <span class="st">"NOV"</span> <span class="ot">=</span> <span class="st">"11"</span>, <span class="st">"DEC"</span> <span class="ot">=</span> <span class="st">"12"</span>)</span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>  ))</span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(ocupacion)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 6 × 4
+  CONSIDERED_DATE NO_ROOMS CF_OCCUPANCY                     CF_AVERAGE_ROOM_RATE
+  &lt;chr&gt;              &lt;dbl&gt; &lt;chr&gt;                            &lt;chr&gt;               
+1 01-01-16              58 89.2307692307692307692307692307… 234447.509852216748…
+2 02-01-16              47 73.4375                          185543.942249240121…
+3 03-01-16              25 39.0625                          154196.28           
+4 04-01-16              22 35.4838709677419354838709677419… 133036.181818181818…
+5 05-01-16              29 47.5409836065573770491803278688… 121692.896551724137…
+6 06-01-16              35 61.4035087719298245614035087719… 131469.885714285714…</code></pre>
+</div>
+</div>
+<p>En este apartado se consulta por el tipo de información que aporta el df ocupacion.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sapply</span>(ocupacion, class)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>     CONSIDERED_DATE             NO_ROOMS         CF_OCCUPANCY 
+         "character"            "numeric"          "character" 
+CF_AVERAGE_ROOM_RATE 
+         "character" </code></pre>
+</div>
+</div>
+<p>Ahora se modifican los tipos de datos para comenzar a crear el modelo ARIMA</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>ocupacion1 <span class="ot">&lt;-</span> ocupacion <span class="sc">%&gt;%</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>   <span class="co"># Convertir CF_OCCUPANCY a numérico; quitar símbolos no numéricos como '%'</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">CF_OCCUPANCY =</span> <span class="fu">as.numeric</span>(<span class="fu">gsub</span>(<span class="st">"%"</span>, <span class="st">""</span>, CF_OCCUPANCY)) <span class="sc">/</span> <span class="dv">100</span>,</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Convertir CF_AVERAGE_ROOM_RATE a numérico</span></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">CF_AVERAGE_ROOM_RATE =</span> <span class="fu">as.numeric</span>(CF_AVERAGE_ROOM_RATE),</span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Redondear los valores numéricos a 2 decimales</span></span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>    <span class="at">CF_OCCUPANCY =</span> <span class="fu">round</span>(CF_OCCUPANCY, <span class="dv">2</span>),</span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>    <span class="at">CF_AVERAGE_ROOM_RATE =</span> <span class="fu">round</span>(CF_AVERAGE_ROOM_RATE, <span class="dv">0</span>)</span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a>ocupacion1 <span class="ot">&lt;-</span> ocupacion1 <span class="sc">%&gt;%</span></span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">CONSIDERED_DATE =</span> <span class="fu">dmy</span>(CONSIDERED_DATE))  <span class="co"># dmy() convierte de día-mes-año a Date</span></span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a><span class="fu">sapply</span>(ocupacion1, class)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>     CONSIDERED_DATE             NO_ROOMS         CF_OCCUPANCY 
+              "Date"            "numeric"            "numeric" 
+CF_AVERAGE_ROOM_RATE 
+           "numeric" </code></pre>
+</div>
+</div>
+<p>Otro paso es agrupar los datos de manera mensual para el analisis y se conforma la serie temporal mensual.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Agrupar por año y mes y calcular el promedio de cada mes</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>ocupacion_mensual <span class="ot">&lt;-</span> ocupacion1 <span class="sc">%&gt;%</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(<span class="at">Fecha =</span> <span class="fu">floor_date</span>(CONSIDERED_DATE, <span class="st">"month"</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarize</span>(</span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">Promedio_Ocupacion =</span> <span class="fu">mean</span>(CF_OCCUPANCY, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">Promedio_Tarifa =</span> <span class="fu">mean</span>(CF_AVERAGE_ROOM_RATE, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">.groups =</span> <span class="st">'drop'</span></span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a><span class="co"># Convertir la columna 'Fecha' a tipo Date (si aún no lo está)</span></span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a>ocupacion_mensual <span class="ot">&lt;-</span> ocupacion_mensual <span class="sc">%&gt;%</span></span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">Fecha =</span> <span class="fu">as.Date</span>(Fecha))</span>
+<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a><span class="co">#ocupacion_mensual &lt;- ocupacion_mensual %&gt;%</span></span>
+<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a>  <span class="co">#filter(year(Fecha) &lt; 2020)</span></span>
+<span id="cb9-15"><a href="#cb9-15" aria-hidden="true" tabindex="-1"></a><span class="co"># Crear la serie temporal con frecuencia mensual (12)</span></span>
+<span id="cb9-16"><a href="#cb9-16" aria-hidden="true" tabindex="-1"></a>ts_ocupacion_mensual <span class="ot">&lt;-</span> <span class="fu">ts</span>(ocupacion_mensual<span class="sc">$</span>Promedio_Ocupacion, </span>
+<span id="cb9-17"><a href="#cb9-17" aria-hidden="true" tabindex="-1"></a>                           <span class="at">start =</span> <span class="fu">c</span>(<span class="fu">year</span>(<span class="fu">min</span>(ocupacion_mensual<span class="sc">$</span>Fecha)), <span class="fu">month</span>(<span class="fu">min</span>(ocupacion_mensual<span class="sc">$</span>Fecha))), </span>
+<span id="cb9-18"><a href="#cb9-18" aria-hidden="true" tabindex="-1"></a>                           <span class="at">frequency =</span> <span class="dv">12</span>)</span>
+<span id="cb9-19"><a href="#cb9-19" aria-hidden="true" tabindex="-1"></a><span class="co"># Calcular el promedio de la serie excluyendo los ceros</span></span>
+<span id="cb9-20"><a href="#cb9-20" aria-hidden="true" tabindex="-1"></a>mean_ocupacion <span class="ot">&lt;-</span> <span class="fu">mean</span>(ts_ocupacion_mensual[ts_ocupacion_mensual <span class="sc">!=</span> <span class="dv">0</span>], <span class="at">na.rm =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb9-21"><a href="#cb9-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-22"><a href="#cb9-22" aria-hidden="true" tabindex="-1"></a><span class="co"># Reemplazar los valores de 0 con el promedio</span></span>
+<span id="cb9-23"><a href="#cb9-23" aria-hidden="true" tabindex="-1"></a>ts_ocupacion_mensual[ts_ocupacion_mensual <span class="sc">==</span> <span class="dv">0</span>] <span class="ot">&lt;-</span> mean_ocupacion <span class="co">#Periodo donde el hotel estuvo cerrado por </span></span>
+<span id="cb9-24"><a href="#cb9-24" aria-hidden="true" tabindex="-1"></a><span class="co"># Verificar la serie temporal</span></span>
+<span id="cb9-25"><a href="#cb9-25" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(ts_ocupacion_mensual, <span class="at">main =</span> <span class="st">"Ocupación Mensual"</span>, <span class="at">ylab =</span> <span class="st">"Tasa de Ocupación"</span>, <span class="at">xlab =</span> <span class="st">"Tiempo"</span>, <span class="at">col =</span> <span class="st">"blue"</span>, <span class="at">type =</span> <span class="st">"o"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="proyecto_final_files/figure-html/unnamed-chunk-6-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>##<strong>Modelo SARIMA</strong></p>
+<p>Para la elaboracion de los parametros del modelo se aplicara la medotologia X-13ARIMA, a traves de la funcion seas, para determinar sus p,d,q,P,D,Q.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Ajustar un modelo x13arima a una serie temporal</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>modelo <span class="ot">&lt;-</span> <span class="fu">seas</span>(ts_ocupacion_mensual)</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Resumen del modelo ajustado</span></span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(modelo)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+Call:
+seas(x = ts_ocupacion_mensual)
+
+Coefficients:
+                  Estimate Std. Error z value Pr(&gt;|z|)    
+Constant          -0.02628    0.00588  -4.469 7.86e-06 ***
+AO2020.Mar        -0.25256    0.06560  -3.850 0.000118 ***
+AO2021.Apr        -0.27432    0.06568  -4.177 2.96e-05 ***
+AR-Nonseasonal-01  0.67711    0.13575   4.988 6.10e-07 ***
+MA-Nonseasonal-01  0.28828    0.17239   1.672 0.094484 .  
+MA-Seasonal-12     0.85979    0.06500  13.227  &lt; 2e-16 ***
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+SEATS adj.  ARIMA: (1 0 1)(0 1 1)  Obs.: 105  Transform: none
+AICc: -196.6, BIC: -180.1  QS (no seasonality in final):    0  
+Box-Ljung (no autocorr.): 35.81 . Shapiro (normality): 0.9802  
+Messages generated by X-13:
+Warnings:
+- At least one visually significant trading day peak has been
+  found in one or more of the estimated spectra.</code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>modelo2 <span class="ot">&lt;-</span> <span class="fu">Arima</span>(ts_ocupacion_mensual, </span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>                       <span class="at">order =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">1</span>), </span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>                       <span class="at">seasonal =</span> <span class="fu">list</span>(<span class="at">order =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">1</span>, <span class="dv">1</span>), <span class="at">period =</span> <span class="dv">12</span>))</span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(modelo2)  <span class="co"># Resumen del modelo ajustado</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Series: ts_ocupacion_mensual 
+ARIMA(1,0,1)(0,1,1)[12] 
+
+Coefficients:
+         ar1      ma1     sma1
+      0.8556  -0.4285  -0.7520
+s.e.  0.1017   0.1543   0.1793
+
+sigma^2 = 0.008182:  log likelihood = 87.9
+AIC=-167.8   AICc=-167.34   BIC=-157.67
+
+Training set error measures:
+                      ME       RMSE        MAE       MPE     MAPE      MASE
+Training set -0.01130871 0.08374264 0.05869602 -4.608765 12.10096 0.6941844
+                    ACF1
+Training set -0.01913372</code></pre>
+</div>
+</div>
+<p>Se realiza la prueba de estacionaridad Dickey-Fuller, donde un p-value &lt;0.05 significa que la serie de tiempo cuenta con esta caracteristica, en este caso al ser mayor los datos se deben diferenciar.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>residuals<span class="ot">=</span><span class="fu">resid</span>(modelo2)</span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a><span class="fu">adf.test</span>(residuals)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning in adf.test(residuals): p-value smaller than printed p-value</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+    Augmented Dickey-Fuller Test
+
+data:  residuals
+Dickey-Fuller = -5.1402, Lag order = 4, p-value = 0.01
+alternative hypothesis: stationary</code></pre>
+</div>
+</div>
+<p>Ahora se comprueban que el modelo cumpla con las propiedades de los residuos: -Normalidad, por lo que se enciente que el modelo debe seguir el comportamiento de una distribución normal. -Independencia, es decir que los residuos sean independientres entre si. -Homoscedasticidad, por lo que la varianza debe ser constante en el tiempo.</p>
+<p>Primero se realiza la prueba de normalidad, la cual arroja un p-value muy cercano a cero, para evidenciar la existencia de la normalidad el valor debe ser &lt;0.05, por lo que se procede a ajustar el modelo a traves de un proceso de BoxCox.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Suponiendo que 'modelo2' es tu modelo ajustado y ya tienes los residuos</span></span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>residuos <span class="ot">&lt;-</span> <span class="fu">residuals</span>(modelo2)</span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a><span class="co"># 2. Prueba de normalidad: Jarque-Bera</span></span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a>jarque_bera_test <span class="ot">&lt;-</span> <span class="fu">jarque.bera.test</span>(residuos)</span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(jarque_bera_test)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+    Jarque Bera Test
+
+data:  residuos
+X-squared = 23.308, df = 2, p-value = 8.684e-06</code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb19"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Calcular el valor óptimo de lambda</span></span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>lambda <span class="ot">&lt;-</span> <span class="fu">BoxCox.lambda</span>(ts_ocupacion_mensual)</span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Transformar la serie temporal usando la transformación de Box-Cox</span></span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a>ts_ocupacion_mensual_boxcox <span class="ot">&lt;-</span> <span class="fu">BoxCox</span>(ts_ocupacion_mensual, lambda)</span>
+<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Ajustar el modelo SARIMA a la serie transformada</span></span>
+<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a>modelo_boxcox <span class="ot">&lt;-</span> <span class="fu">Arima</span>(ts_ocupacion_mensual_boxcox, </span>
+<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a>                        <span class="at">order =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">1</span>), </span>
+<span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a>                        <span class="at">seasonal =</span> <span class="fu">list</span>(<span class="at">order =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">1</span>, <span class="dv">1</span>), <span class="at">period =</span> <span class="dv">12</span>))</span>
+<span id="cb19-9"><a href="#cb19-9" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(modelo_boxcox)  <span class="co"># Resumen del modelo ajustado</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Series: ts_ocupacion_mensual_boxcox 
+ARIMA(1,0,1)(0,1,1)[12] 
+
+Coefficients:
+         ar1      ma1     sma1
+      0.8513  -0.4219  -0.7131
+s.e.  0.0950   0.1434   0.1604
+
+sigma^2 = 0.005463:  log likelihood = 107.39
+AIC=-206.78   AICc=-206.32   BIC=-196.64
+
+Training set error measures:
+                       ME       RMSE        MAE        MPE     MAPE      MASE
+Training set -0.009056829 0.06842654 0.04831547 -0.7530785 14.25392 0.6914493
+                    ACF1
+Training set -0.03242414</code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb21"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a>residuals_boxcox <span class="ot">&lt;-</span> <span class="fu">residuals</span>(modelo_boxcox)</span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a><span class="fu">adf.test</span>(residuals_boxcox)  <span class="co"># Prueba de Dickey-Fuller</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning in adf.test(residuals_boxcox): p-value smaller than printed p-value</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+    Augmented Dickey-Fuller Test
+
+data:  residuals_boxcox
+Dickey-Fuller = -5.0377, Lag order = 4, p-value = 0.01
+alternative hypothesis: stationary</code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb24"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="co"># 2. Prueba de normalidad: Jarque-Bera</span></span>
+<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a>jarque_bera_test2 <span class="ot">&lt;-</span> <span class="fu">jarque.bera.test</span>(residuals_boxcox)</span>
+<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(jarque_bera_test2)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+    Jarque Bera Test
+
+data:  residuals_boxcox
+X-squared = 12.809, df = 2, p-value = 0.001654</code></pre>
+</div>
+</div>
+<p>Si bien no se obtuvo un p-value mayor a 0.05, el modelo ajustado por BoxCox se aproxima más al valor deseado, por lo que se continua con este modelo y se le realiza la prueba de independencia, si el p-vlau es &gt;0.05 se asume que el modelo cumple con la independencia de sus residuos.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb26"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="co"># 3. Prueba de independencia: Ljung-Box</span></span>
+<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a>ljung_box_test <span class="ot">&lt;-</span> <span class="fu">Box.test</span>(residuals_boxcox, <span class="at">type =</span> <span class="st">"Ljung-Box"</span>)</span>
+<span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(ljung_box_test)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+    Box-Ljung test
+
+data:  residuals_boxcox
+X-squared = 0.11357, df = 1, p-value = 0.7361</code></pre>
+</div>
+</div>
+<p>Conforme al anterior analisis se realiza la prueba de homoscedasticidad, revisando la variación de la serie, ya que el p-value es &gt;0.05 indica que los residuos no presentan heterocedasticidad, por lo que se ajusta bien al modelo.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb28"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Crear un modelo lineal con los residuos</span></span>
+<span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a>modelo_lineal_residuos <span class="ot">&lt;-</span> <span class="fu">lm</span>(residuals_boxcox <span class="sc">~</span> <span class="fu">fitted</span>(modelo2))</span>
+<span id="cb28-3"><a href="#cb28-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb28-4"><a href="#cb28-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Realizar la prueba de Breusch-Pagan</span></span>
+<span id="cb28-5"><a href="#cb28-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb28-6"><a href="#cb28-6" aria-hidden="true" tabindex="-1"></a>bptest_result <span class="ot">&lt;-</span> <span class="fu">bptest</span>(modelo_lineal_residuos)</span>
+<span id="cb28-7"><a href="#cb28-7" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(bptest_result)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+    studentized Breusch-Pagan test
+
+data:  modelo_lineal_residuos
+BP = 0.18008, df = 1, p-value = 0.6713</code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb30"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a><span class="co"># 3. Realizar la proyección</span></span>
+<span id="cb30-2"><a href="#cb30-2" aria-hidden="true" tabindex="-1"></a>proy_boxcox <span class="ot">&lt;-</span> <span class="fu">forecast</span>(modelo_boxcox, <span class="at">h =</span> <span class="dv">12</span>)</span>
+<span id="cb30-3"><a href="#cb30-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-4"><a href="#cb30-4" aria-hidden="true" tabindex="-1"></a><span class="co"># 4. Aplicar la transformación inversa a los resultados de la proyección</span></span>
+<span id="cb30-5"><a href="#cb30-5" aria-hidden="true" tabindex="-1"></a>proy_ocu <span class="ot">&lt;-</span> <span class="fu">InvBoxCox</span>(proy_boxcox<span class="sc">$</span>mean, lambda)</span>
+<span id="cb30-6"><a href="#cb30-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-7"><a href="#cb30-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Realizar una proyección a 12 meses con el modelo SARIMA</span></span>
+<span id="cb30-8"><a href="#cb30-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-9"><a href="#cb30-9" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(proy_ocu, <span class="at">main =</span> <span class="st">"Pronóstico de Ocupación Mensual con SARIMA"</span>,</span>
+<span id="cb30-10"><a href="#cb30-10" aria-hidden="true" tabindex="-1"></a>     <span class="at">xlab =</span> <span class="st">"Mes"</span>, <span class="at">ylab =</span> <span class="st">"Ocupación Hotelera"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="proyecto_final_files/figure-html/unnamed-chunk-16-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Se realiza el mismo proceso para la tarifa promedio, con el fin de unir ambas proyecciones y determinar un posible ingreso por venta de habitaciones, en un preiodo de 12 meses a futuro.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb31"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a>ts_tarifa_prom <span class="ot">&lt;-</span> <span class="fu">ts</span>(ocupacion_mensual<span class="sc">$</span>Promedio_Tarifa, </span>
+<span id="cb31-2"><a href="#cb31-2" aria-hidden="true" tabindex="-1"></a>                     <span class="at">start =</span> <span class="fu">c</span>(<span class="fu">year</span>(<span class="fu">min</span>(ocupacion_mensual<span class="sc">$</span>Fecha)), <span class="fu">month</span>(<span class="fu">min</span>(ocupacion_mensual<span class="sc">$</span>Fecha))), </span>
+<span id="cb31-3"><a href="#cb31-3" aria-hidden="true" tabindex="-1"></a>                     <span class="at">frequency =</span> <span class="dv">12</span>)</span>
+<span id="cb31-4"><a href="#cb31-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Calcular el promedio de la serie excluyendo los ceros</span></span>
+<span id="cb31-5"><a href="#cb31-5" aria-hidden="true" tabindex="-1"></a>mean_tarifa <span class="ot">&lt;-</span> <span class="fu">mean</span>(ts_tarifa_prom[ts_tarifa_prom <span class="sc">!=</span> <span class="dv">0</span>], <span class="at">na.rm =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb31-6"><a href="#cb31-6" aria-hidden="true" tabindex="-1"></a>ts_tarifa_prom[ts_tarifa_prom <span class="sc">==</span> <span class="dv">0</span>] <span class="ot">&lt;-</span> mean_tarifa <span class="co">#Periodo donde el hotel estuvo cerrado por pandemia</span></span>
+<span id="cb31-7"><a href="#cb31-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Ajustar un modelo x13arima a una serie temporal</span></span>
+<span id="cb31-8"><a href="#cb31-8" aria-hidden="true" tabindex="-1"></a>modelot <span class="ot">&lt;-</span> <span class="fu">seas</span>(ts_tarifa_prom)</span>
+<span id="cb31-9"><a href="#cb31-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb31-10"><a href="#cb31-10" aria-hidden="true" tabindex="-1"></a><span class="co"># Resumen del modelo ajustado</span></span>
+<span id="cb31-11"><a href="#cb31-11" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(modelot)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+Call:
+seas(x = ts_tarifa_prom)
+
+Coefficients:
+               Estimate Std. Error z value Pr(&gt;|z|)    
+AO2020.Mar     -0.33591    0.04296  -7.820 5.30e-15 ***
+AR-Seasonal-12  0.85150    0.06168  13.804  &lt; 2e-16 ***
+MA-Seasonal-12  0.52973    0.11658   4.544 5.53e-06 ***
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+SEATS adj.  ARIMA: (0 1 0)(1 0 1)  Obs.: 105  Transform: log
+AICc:  2206, BIC:  2217  QS (no seasonality in final):    0  
+Box-Ljung (no autocorr.):  29.6   Shapiro (normality): 0.9812  </code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb33"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a>modelot <span class="ot">&lt;-</span> <span class="fu">Arima</span>(ts_tarifa_prom, </span>
+<span id="cb33-2"><a href="#cb33-2" aria-hidden="true" tabindex="-1"></a>                       <span class="at">order =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">1</span>, <span class="dv">0</span>), </span>
+<span id="cb33-3"><a href="#cb33-3" aria-hidden="true" tabindex="-1"></a>                       <span class="at">seasonal =</span> <span class="fu">list</span>(<span class="at">order =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">1</span>), <span class="at">period =</span> <span class="dv">12</span>))</span>
+<span id="cb33-4"><a href="#cb33-4" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(modelot)  <span class="co"># Resumen del modelo ajustado</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Series: ts_tarifa_prom 
+ARIMA(0,1,0)(1,0,1)[12] 
+
+Coefficients:
+        sar1     sma1
+      0.9116  -0.7147
+s.e.  0.1113   0.2092
+
+sigma^2 = 135086998:  log likelihood = -1122.38
+AIC=2250.76   AICc=2251   BIC=2258.69
+
+Training set error measures:
+                   ME     RMSE      MAE        MPE     MAPE      MASE
+Training set 249.4917 11455.45 8328.443 -0.1320909 5.768398 0.6188685
+                   ACF1
+Training set -0.2530591</code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb35"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a>residuals<span class="ot">=</span><span class="fu">resid</span>(modelot)</span>
+<span id="cb35-2"><a href="#cb35-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb35-3"><a href="#cb35-3" aria-hidden="true" tabindex="-1"></a><span class="fu">adf.test</span>(residuals)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning in adf.test(residuals): p-value smaller than printed p-value</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+    Augmented Dickey-Fuller Test
+
+data:  residuals
+Dickey-Fuller = -5.5296, Lag order = 4, p-value = 0.01
+alternative hypothesis: stationary</code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb38"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb38-1"><a href="#cb38-1" aria-hidden="true" tabindex="-1"></a>proyec_tarif <span class="ot">=</span> <span class="fu">forecast</span>(modelot, <span class="at">h =</span><span class="dv">12</span>)</span>
+<span id="cb38-2"><a href="#cb38-2" aria-hidden="true" tabindex="-1"></a>proyec_tarif</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>         Point Forecast    Lo 80    Hi 80     Lo 95    Hi 95
+Oct 2024       183952.5 169052.0 198853.0 161164.20 206740.8
+Nov 2024       178877.2 157804.8 199949.7 146649.70 211104.8
+Dec 2024       186513.4 160705.0 212321.8 147042.87 225983.9
+Jan 2025       189601.4 159800.4 219402.3 144024.76 235178.0
+Feb 2025       188245.2 154927.9 221562.5 137290.80 239199.6
+Mar 2025       179330.2 142833.8 215826.6 123513.74 235146.6
+Apr 2025       176460.2 137040.2 215880.1 116172.54 236747.8
+May 2025       173559.3 131418.1 215700.5 109109.92 238008.7
+Jun 2025       173211.3 128514.3 217908.3 104853.10 241569.5
+Jul 2025       172070.9 124956.5 219185.3 100015.60 244126.2
+Aug 2025       174307.7 124894.0 223721.4  98735.96 249879.5
+Sep 2025       179933.7 128323.0 231544.4 101002.00 258865.4</code></pre>
+</div>
+</div>
+<p>##<strong>Proyección de los ingresos</strong></p>
+<p>Una vez validado ambos modelos se procede a tranformar la ocupación en habitaciones, para multiplicar por la proyeccion de tarifa promedio, asi visualizar los posibles ingresos por concepto de venta de habitaciones del hotel.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb40"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb40-1"><a href="#cb40-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Paso 1: Calcular habitaciones proyectadas</span></span>
+<span id="cb40-2"><a href="#cb40-2" aria-hidden="true" tabindex="-1"></a>habitaciones_proyectadas <span class="ot">&lt;-</span> <span class="fu">round</span>(proy_ocu <span class="sc">*</span> <span class="dv">67</span> <span class="sc">*</span> <span class="dv">30</span>, <span class="dv">0</span>)  <span class="co"># Multiplica ocupación proyectada por habitaciones y días, luego redondea</span></span>
+<span id="cb40-3"><a href="#cb40-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb40-4"><a href="#cb40-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Paso 2: Crear un data frame con las proyecciones</span></span>
+<span id="cb40-5"><a href="#cb40-5" aria-hidden="true" tabindex="-1"></a>df_proyecciones <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb40-6"><a href="#cb40-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">Mes =</span> <span class="fu">time</span>(proy_boxcox<span class="sc">$</span>mean),                   <span class="co"># Extrae los tiempos de la proyección</span></span>
+<span id="cb40-7"><a href="#cb40-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">Habitaciones_Proyectadas =</span> habitaciones_proyectadas,  <span class="co"># Calcula habitaciones proyectadas</span></span>
+<span id="cb40-8"><a href="#cb40-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">Proyect_Tarifa =</span> proyec_tarif<span class="sc">$</span>mean               <span class="co"># Agrega la proyección de tarifas</span></span>
+<span id="cb40-9"><a href="#cb40-9" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb40-10"><a href="#cb40-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb40-11"><a href="#cb40-11" aria-hidden="true" tabindex="-1"></a><span class="co"># Paso 3: Calcular los ingresos potenciales</span></span>
+<span id="cb40-12"><a href="#cb40-12" aria-hidden="true" tabindex="-1"></a>df_proyecciones <span class="ot">&lt;-</span> df_proyecciones <span class="sc">%&gt;%</span></span>
+<span id="cb40-13"><a href="#cb40-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">Ingresos_Potenciales =</span> Habitaciones_Proyectadas <span class="sc">*</span> Proyect_Tarifa)  <span class="co"># Calcula los ingresos</span></span>
+<span id="cb40-14"><a href="#cb40-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb40-15"><a href="#cb40-15" aria-hidden="true" tabindex="-1"></a><span class="co"># Paso 4: Visualizar los resultados</span></span>
+<span id="cb40-16"><a href="#cb40-16" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(df_proyecciones)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>        Mes Habitaciones_Proyectadas Proyect_Tarifa Ingresos_Potenciales
+1  2024.750                     1190       183952.5            218903496
+2  2024.833                     1287       178877.2            230215009
+3  2024.917                     1146       186513.4            213744339
+4  2025.000                     1221       189601.4            231503293
+5  2025.083                     1478       188245.2            278226430
+6  2025.167                     1016       179330.2            182199461
+7  2025.250                      955       176460.2            168519464
+8  2025.333                      838       173559.3            145442684
+9  2025.417                      965       173211.3            167148913
+10 2025.500                     1121       172070.9            192891486
+11 2025.583                     1065       174307.7            185637716
+12 2025.667                     1059       179933.7            190549787</code></pre>
+</div>
+</div>
+<p>Por ultimo se grafica la proyeccion de ventas de habitaciones.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb42"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb42-1"><a href="#cb42-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Asegúrate de que 'Mes' sea una serie de tiempo y extrae las fechas</span></span>
+<span id="cb42-2"><a href="#cb42-2" aria-hidden="true" tabindex="-1"></a>df_proyecciones <span class="ot">&lt;-</span> df_proyecciones <span class="sc">%&gt;%</span></span>
+<span id="cb42-3"><a href="#cb42-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">Mes =</span> <span class="fu">as.Date</span>(<span class="fu">as.yearmon</span>(Mes)))  <span class="co"># Convertir ts a Date usando zoo</span></span>
+<span id="cb42-4"><a href="#cb42-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb42-5"><a href="#cb42-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Paso 1: Calcular ingresos potenciales en millones</span></span>
+<span id="cb42-6"><a href="#cb42-6" aria-hidden="true" tabindex="-1"></a>df_proyecciones <span class="ot">&lt;-</span> df_proyecciones <span class="sc">%&gt;%</span></span>
+<span id="cb42-7"><a href="#cb42-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">Ingresos_Potenciales_Millones =</span> Ingresos_Potenciales <span class="sc">/</span> <span class="fl">1e6</span>)  <span class="co"># Divide por 1,000,000</span></span>
+<span id="cb42-8"><a href="#cb42-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb42-9"><a href="#cb42-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Paso 2: Graficar los ingresos potenciales en millones</span></span>
+<span id="cb42-10"><a href="#cb42-10" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(df_proyecciones, <span class="fu">aes</span>(<span class="at">x =</span> Mes, <span class="at">y =</span> Ingresos_Potenciales_Millones)) <span class="sc">+</span></span>
+<span id="cb42-11"><a href="#cb42-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="at">color =</span> <span class="st">"#0072B2"</span>, <span class="at">size =</span> <span class="fl">1.2</span>) <span class="sc">+</span>  <span class="co"># Cambiar color y aumentar el tamaño de la línea</span></span>
+<span id="cb42-12"><a href="#cb42-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="at">color =</span> <span class="st">"#D55E00"</span>, <span class="at">size =</span> <span class="dv">3</span>) <span class="sc">+</span>  <span class="co"># Cambiar color de los puntos</span></span>
+<span id="cb42-13"><a href="#cb42-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_text</span>(<span class="fu">aes</span>(<span class="at">label =</span> <span class="fu">round</span>(Ingresos_Potenciales_Millones, <span class="dv">1</span>)), </span>
+<span id="cb42-14"><a href="#cb42-14" aria-hidden="true" tabindex="-1"></a>            <span class="at">vjust =</span> <span class="sc">-</span><span class="fl">0.5</span>, </span>
+<span id="cb42-15"><a href="#cb42-15" aria-hidden="true" tabindex="-1"></a>            <span class="at">size =</span> <span class="fl">3.5</span>, </span>
+<span id="cb42-16"><a href="#cb42-16" aria-hidden="true" tabindex="-1"></a>            <span class="at">color =</span> <span class="st">"#D55E00"</span>, </span>
+<span id="cb42-17"><a href="#cb42-17" aria-hidden="true" tabindex="-1"></a>            <span class="at">check_overlap =</span> <span class="cn">TRUE</span>) <span class="sc">+</span>  <span class="co"># Etiquetas en puntos</span></span>
+<span id="cb42-18"><a href="#cb42-18" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">"Ingresos Potenciales por Venta de Habitaciones (en Millones)"</span>,</span>
+<span id="cb42-19"><a href="#cb42-19" aria-hidden="true" tabindex="-1"></a>       <span class="at">x =</span> <span class="st">"Mes"</span>,</span>
+<span id="cb42-20"><a href="#cb42-20" aria-hidden="true" tabindex="-1"></a>       <span class="at">y =</span> <span class="st">"Ingresos Potenciales ($ Millones)"</span>) <span class="sc">+</span></span>
+<span id="cb42-21"><a href="#cb42-21" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>(<span class="at">base_size =</span> <span class="dv">14</span>) <span class="sc">+</span>  <span class="co"># Usar tema minimalista y aumentar el tamaño de base</span></span>
+<span id="cb42-22"><a href="#cb42-22" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_y_continuous</span>(<span class="at">labels =</span> <span class="fu">dollar_format</span>(<span class="at">scale =</span> <span class="fl">1e-6</span>, <span class="at">suffix =</span> <span class="st">"M"</span>)) <span class="sc">+</span>  <span class="co"># Formato en millones</span></span>
+<span id="cb42-23"><a href="#cb42-23" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_x_date</span>(<span class="at">date_breaks =</span> <span class="st">"1 month"</span>, <span class="at">date_labels =</span> <span class="st">"%b"</span>, <span class="at">expand =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">0</span>)) <span class="sc">+</span>  <span class="co"># Personalizar el eje X</span></span>
+<span id="cb42-24"><a href="#cb42-24" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(</span>
+<span id="cb42-25"><a href="#cb42-25" aria-hidden="true" tabindex="-1"></a>    <span class="at">plot.title =</span> <span class="fu">element_text</span>(<span class="at">hjust =</span> <span class="fl">0.5</span>, <span class="at">face =</span> <span class="st">"bold"</span>, <span class="at">size =</span> <span class="dv">16</span>, <span class="at">color =</span> <span class="st">"#2A2A2A"</span>),  <span class="co"># Centrar título y cambiar estilo</span></span>
+<span id="cb42-26"><a href="#cb42-26" aria-hidden="true" tabindex="-1"></a>    <span class="at">axis.title.x =</span> <span class="fu">element_text</span>(<span class="at">face =</span> <span class="st">"bold"</span>, <span class="at">size =</span> <span class="dv">14</span>, <span class="at">color =</span> <span class="st">"#2A2A2A"</span>),  <span class="co"># Título eje X</span></span>
+<span id="cb42-27"><a href="#cb42-27" aria-hidden="true" tabindex="-1"></a>    <span class="at">axis.title.y =</span> <span class="fu">element_text</span>(<span class="at">face =</span> <span class="st">"bold"</span>, <span class="at">size =</span> <span class="dv">14</span>, <span class="at">color =</span> <span class="st">"#2A2A2A"</span>),  <span class="co"># Título eje Y</span></span>
+<span id="cb42-28"><a href="#cb42-28" aria-hidden="true" tabindex="-1"></a>    <span class="at">axis.text.x =</span> <span class="fu">element_text</span>(<span class="at">angle =</span> <span class="dv">45</span>, <span class="at">hjust =</span> <span class="dv">1</span>, <span class="at">color =</span> <span class="st">"#2A2A2A"</span>),  <span class="co"># Etiquetas eje X</span></span>
+<span id="cb42-29"><a href="#cb42-29" aria-hidden="true" tabindex="-1"></a>    <span class="at">axis.text.y =</span> <span class="fu">element_text</span>(<span class="at">color =</span> <span class="st">"#2A2A2A"</span>),  <span class="co"># Etiquetas eje Y</span></span>
+<span id="cb42-30"><a href="#cb42-30" aria-hidden="true" tabindex="-1"></a>    <span class="at">panel.grid.major =</span> <span class="fu">element_line</span>(<span class="at">color =</span> <span class="st">"#D9D9D9"</span>),  <span class="co"># Color de las líneas de la cuadrícula</span></span>
+<span id="cb42-31"><a href="#cb42-31" aria-hidden="true" tabindex="-1"></a>    <span class="at">panel.grid.minor =</span> <span class="fu">element_blank</span>(),  <span class="co"># Eliminar líneas de cuadrícula menores</span></span>
+<span id="cb42-32"><a href="#cb42-32" aria-hidden="true" tabindex="-1"></a>    <span class="at">legend.position =</span> <span class="st">"none"</span>  <span class="co"># Ocultar leyenda si no es necesaria</span></span>
+<span id="cb42-33"><a href="#cb42-33" aria-hidden="true" tabindex="-1"></a>  )</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: Using `size` aesthetic for lines was deprecated in ggplot2 3.4.0.
+ℹ Please use `linewidth` instead.</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Don't know how to automatically pick scale for object of type &lt;ts&gt;. Defaulting
+to continuous.</code></pre>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="proyecto_final_files/figure-html/unnamed-chunk-22-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>##<strong>Monitoreo y mejoras</strong></p>
+<p>Tras realizar el código, como primera mejora se propone encontrar el ajuste necesario para cumplir con todos los principios estadísticos, ya que la prueba de normalidad no fue satisfactoria. En el futuro, se sugiere fortalecer las bases teóricas para sustentar el modelo. Aunque inicialmente se pretende proyectar futuros ingresos, se considera tomar este modelo como base e implementar herramientas de machine learning supervisado, con el fin de desarrollar un modelo que apoye la toma de decisiones sobre el valor de una habitación, en un entorno de tarifas dinámicas, aprovechando los intervalos de demanda y ajustando los precios para maximizar la rentabilidad.</p>
+<p>El modelo se revisará mensualmente, contrastando la información proyectada con la real y estimando variaciones en el modelo que se adapten a la nueva realidad. Además, se explorará un mejor método para considerar el período en que el hotel estuvo cerrado por la pandemia, ya que actualmente se ha aplicado el promedio de la serie para los valores en 0.</p>
+<p>Finalmente, los valores obtenidos reflejan tres realidades: período prepandemia, pandemia y pospandemia. Dado el volumen de información posible de recopilar, se sugiere que el modelo vuelva a evaluarse una vez que se disponga de al menos 50 datos posteriores a 2022, para obtener una muestra más representativa de la situación actual del negocio.</p>
+<p>Por último, cabe señalar que el pronóstico muestra valores que, a primera vista, concuerdan con la realidad del negocio.</p>
+</section>
+
+</main>
+<!-- /main column -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    text: function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+    var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+    var mailtoRegex = new RegExp(/^mailto:/);
+      var filterRegex = new RegExp('/' + window.location.host + '/');
+    var isInternal = (href) => {
+        return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+    }
+    // Inspect non-navigation links and adorn them if external
+ 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool)');
+    for (var i=0; i<links.length; i++) {
+      const link = links[i];
+      if (!isInternal(link.href)) {
+        // undo the damage that might have been done by quarto-nav.js in the case of
+        // links that we want to consider external
+        if (link.dataset.originalHref !== undefined) {
+          link.href = link.dataset.originalHref;
+        }
+      }
+    }
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      if (note) {
+        return note.innerHTML;
+      } else {
+        return "";
+      }
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
+        return container.innerHTML
+      } else {
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
+      // TODO in 1.5, we should make sure this works without a callout special case
+      if (note.classList.contains("callout")) {
+        return note.outerHTML;
+      } else {
+        return note.innerHTML;
+      }
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>
