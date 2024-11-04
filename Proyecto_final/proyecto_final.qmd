@@ -170,12 +170,21 @@ print(jarque_bera_test)
 lambda <- BoxCox.lambda(ts_ocupacion_mensual)
 # Transformar la serie temporal usando la transformación de Box-Cox
 ts_ocupacion_mensual_boxcox <- BoxCox(ts_ocupacion_mensual, lambda)
+
+modelo6 = seas(ts_ocupacion_mensual_boxcox)
+modelo6
+```
+
+```{r}
 # Ajustar el modelo SARIMA a la serie transformada
 modelo_boxcox <- Arima(ts_ocupacion_mensual_boxcox, 
-                        order = c(1, 0, 1), 
-                        seasonal = list(order = c(0, 1, 1), period = 12))
+                        order = c(0, 1, 1), 
+                        seasonal = list(order = c(1, 0, 1), period = 12))
 summary(modelo_boxcox)  # Resumen del modelo ajustado
 ```
+
+
+
 
 ```{r}
 residuals_boxcox <- residuals(modelo_boxcox)
