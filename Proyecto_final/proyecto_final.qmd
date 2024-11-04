@@ -165,6 +165,7 @@ jarque_bera_test <- jarque.bera.test(residuos)
 print(jarque_bera_test)
 ```
 
+
 ```{r}
 # Calcular el valor óptimo de lambda
 lambda <- BoxCox.lambda(ts_ocupacion_mensual)
@@ -223,7 +224,7 @@ proy_boxcox <- forecast(modelo_boxcox, h = 12)
 
 # 4. Aplicar la transformación inversa a los resultados de la proyección
 proy_ocu <- InvBoxCox(proy_boxcox$mean, lambda)
-
+proy_boxcox
 # Realizar una proyección a 12 meses con el modelo SARIMA
 
 plot(proy_ocu, main = "Pronóstico de Ocupación Mensual con SARIMA",
@@ -342,3 +343,7 @@ El modelo se revisará mensualmente, contrastando la información proyectada con
 Finalmente, los valores obtenidos reflejan tres realidades: período prepandemia, pandemia y pospandemia. Dado el volumen de información posible de recopilar, se sugiere que el modelo vuelva a evaluarse una vez que se disponga de al menos 50 datos posteriores a 2022, para obtener una muestra más representativa de la situación actual del negocio.
 
 Por último, cabe señalar que el pronóstico muestra valores que, a primera vista, concuerdan con la realidad del negocio.
+
+\#Cometarios profesores
+#stress testing pricin valor hab
+#automatizar las pruebas

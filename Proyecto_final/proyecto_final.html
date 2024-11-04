@@ -321,33 +321,52 @@ X-squared = 23.308, df = 2, p-value = 8.684e-06</code></pre>
 <span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>lambda <span class="ot">&lt;-</span> <span class="fu">BoxCox.lambda</span>(ts_ocupacion_mensual)</span>
 <span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Transformar la serie temporal usando la transformación de Box-Cox</span></span>
 <span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a>ts_ocupacion_mensual_boxcox <span class="ot">&lt;-</span> <span class="fu">BoxCox</span>(ts_ocupacion_mensual, lambda)</span>
-<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Ajustar el modelo SARIMA a la serie transformada</span></span>
-<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a>modelo_boxcox <span class="ot">&lt;-</span> <span class="fu">Arima</span>(ts_ocupacion_mensual_boxcox, </span>
-<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a>                        <span class="at">order =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">1</span>), </span>
-<span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a>                        <span class="at">seasonal =</span> <span class="fu">list</span>(<span class="at">order =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">1</span>, <span class="dv">1</span>), <span class="at">period =</span> <span class="dv">12</span>))</span>
-<span id="cb19-9"><a href="#cb19-9" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(modelo_boxcox)  <span class="co"># Resumen del modelo ajustado</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a>modelo6 <span class="ot">=</span> <span class="fu">seas</span>(ts_ocupacion_mensual_boxcox)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Model used in SEATS is different: (0 1 1)(1 0 1)</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb21"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a>modelo6</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>Series: ts_ocupacion_mensual_boxcox 
-ARIMA(1,0,1)(0,1,1)[12] 
+<pre><code>
+Call:
+seas(x = ts_ocupacion_mensual_boxcox)
 
 Coefficients:
-         ar1      ma1     sma1
-      0.8513  -0.4219  -0.7131
-s.e.  0.0950   0.1434   0.1604
-
-sigma^2 = 0.005463:  log likelihood = 107.39
-AIC=-206.78   AICc=-206.32   BIC=-196.64
-
-Training set error measures:
-                       ME       RMSE        MAE        MPE     MAPE      MASE
-Training set -0.009056829 0.06842654 0.04831547 -0.7530785 14.25392 0.6914493
-                    ACF1
-Training set -0.03242414</code></pre>
+         Constant         AO2020.Mar         AO2020.Nov         AO2021.Apr  
+          -0.3743            -0.1833             0.2689            -0.1619  
+       AO2021.Jul  AR-Nonseasonal-01     AR-Seasonal-12     MA-Seasonal-12  
+           0.1847             0.6872             0.6164            -0.2820  </code></pre>
 </div>
 </div>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb21"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a>residuals_boxcox <span class="ot">&lt;-</span> <span class="fu">residuals</span>(modelo_boxcox)</span>
-<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a><span class="fu">adf.test</span>(residuals_boxcox)  <span class="co"># Prueba de Dickey-Fuller</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb23"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Ajustar el modelo SARIMA a la serie transformada</span></span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a>modelo_boxcox <span class="ot">&lt;-</span> <span class="fu">Arima</span>(ts_ocupacion_mensual_boxcox, </span>
+<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a>                        <span class="at">order =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">1</span>, <span class="dv">1</span>), </span>
+<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a>                        <span class="at">seasonal =</span> <span class="fu">list</span>(<span class="at">order =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">1</span>), <span class="at">period =</span> <span class="dv">12</span>))</span>
+<span id="cb23-5"><a href="#cb23-5" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(modelo_boxcox)  <span class="co"># Resumen del modelo ajustado</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Series: ts_ocupacion_mensual_boxcox 
+ARIMA(0,1,1)(1,0,1)[12] 
+
+Coefficients:
+          ma1    sar1     sma1
+      -0.5289  0.9753  -0.7821
+s.e.   0.1166  0.0547   0.2397
+
+sigma^2 = 0.005539:  log likelihood = 117.5
+AIC=-227   AICc=-226.6   BIC=-216.43
+
+Training set error measures:
+                       ME       RMSE        MAE       MPE     MAPE      MASE
+Training set -0.002680414 0.07299112 0.05553843 -3.570212 17.34403 0.7948181
+                   ACF1
+Training set 0.04137577</code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb25"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a>residuals_boxcox <span class="ot">&lt;-</span> <span class="fu">residuals</span>(modelo_boxcox)</span>
+<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a><span class="fu">adf.test</span>(residuals_boxcox)  <span class="co"># Prueba de Dickey-Fuller</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stderr">
 <pre><code>Warning in adf.test(residuals_boxcox): p-value smaller than printed p-value</code></pre>
 </div>
@@ -356,84 +375,84 @@ Training set -0.03242414</code></pre>
     Augmented Dickey-Fuller Test
 
 data:  residuals_boxcox
-Dickey-Fuller = -5.0377, Lag order = 4, p-value = 0.01
+Dickey-Fuller = -5.5123, Lag order = 4, p-value = 0.01
 alternative hypothesis: stationary</code></pre>
 </div>
 </div>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb24"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="co"># 2. Prueba de normalidad: Jarque-Bera</span></span>
-<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a>jarque_bera_test2 <span class="ot">&lt;-</span> <span class="fu">jarque.bera.test</span>(residuals_boxcox)</span>
-<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(jarque_bera_test2)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb28"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a><span class="co"># 2. Prueba de normalidad: Jarque-Bera</span></span>
+<span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a>jarque_bera_test2 <span class="ot">&lt;-</span> <span class="fu">jarque.bera.test</span>(residuals_boxcox)</span>
+<span id="cb28-3"><a href="#cb28-3" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(jarque_bera_test2)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>
     Jarque Bera Test
 
 data:  residuals_boxcox
-X-squared = 12.809, df = 2, p-value = 0.001654</code></pre>
+X-squared = 4.8019, df = 2, p-value = 0.09063</code></pre>
 </div>
 </div>
 <p>Si bien no se obtuvo un p-value mayor a 0.05, el modelo ajustado por BoxCox se aproxima más al valor deseado, por lo que se continua con este modelo y se le realiza la prueba de independencia, si el p-vlau es &gt;0.05 se asume que el modelo cumple con la independencia de sus residuos.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb26"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="co"># 3. Prueba de independencia: Ljung-Box</span></span>
-<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a>ljung_box_test <span class="ot">&lt;-</span> <span class="fu">Box.test</span>(residuals_boxcox, <span class="at">type =</span> <span class="st">"Ljung-Box"</span>)</span>
-<span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(ljung_box_test)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb30"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a><span class="co"># 3. Prueba de independencia: Ljung-Box</span></span>
+<span id="cb30-2"><a href="#cb30-2" aria-hidden="true" tabindex="-1"></a>ljung_box_test <span class="ot">&lt;-</span> <span class="fu">Box.test</span>(residuals_boxcox, <span class="at">type =</span> <span class="st">"Ljung-Box"</span>)</span>
+<span id="cb30-3"><a href="#cb30-3" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(ljung_box_test)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>
     Box-Ljung test
 
 data:  residuals_boxcox
-X-squared = 0.11357, df = 1, p-value = 0.7361</code></pre>
+X-squared = 0.18494, df = 1, p-value = 0.6672</code></pre>
 </div>
 </div>
 <p>Conforme al anterior analisis se realiza la prueba de homoscedasticidad, revisando la variación de la serie, ya que el p-value es &gt;0.05 indica que los residuos no presentan heterocedasticidad, por lo que se ajusta bien al modelo.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb28"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Crear un modelo lineal con los residuos</span></span>
-<span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a>modelo_lineal_residuos <span class="ot">&lt;-</span> <span class="fu">lm</span>(residuals_boxcox <span class="sc">~</span> <span class="fu">fitted</span>(modelo2))</span>
-<span id="cb28-3"><a href="#cb28-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb28-4"><a href="#cb28-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Realizar la prueba de Breusch-Pagan</span></span>
-<span id="cb28-5"><a href="#cb28-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb28-6"><a href="#cb28-6" aria-hidden="true" tabindex="-1"></a>bptest_result <span class="ot">&lt;-</span> <span class="fu">bptest</span>(modelo_lineal_residuos)</span>
-<span id="cb28-7"><a href="#cb28-7" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(bptest_result)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb32"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Crear un modelo lineal con los residuos</span></span>
+<span id="cb32-2"><a href="#cb32-2" aria-hidden="true" tabindex="-1"></a>modelo_lineal_residuos <span class="ot">&lt;-</span> <span class="fu">lm</span>(residuals_boxcox <span class="sc">~</span> <span class="fu">fitted</span>(modelo2))</span>
+<span id="cb32-3"><a href="#cb32-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb32-4"><a href="#cb32-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Realizar la prueba de Breusch-Pagan</span></span>
+<span id="cb32-5"><a href="#cb32-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb32-6"><a href="#cb32-6" aria-hidden="true" tabindex="-1"></a>bptest_result <span class="ot">&lt;-</span> <span class="fu">bptest</span>(modelo_lineal_residuos)</span>
+<span id="cb32-7"><a href="#cb32-7" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(bptest_result)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>
     studentized Breusch-Pagan test
 
 data:  modelo_lineal_residuos
-BP = 0.18008, df = 1, p-value = 0.6713</code></pre>
+BP = 0.21681, df = 1, p-value = 0.6415</code></pre>
 </div>
 </div>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb30"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a><span class="co"># 3. Realizar la proyección</span></span>
-<span id="cb30-2"><a href="#cb30-2" aria-hidden="true" tabindex="-1"></a>proy_boxcox <span class="ot">&lt;-</span> <span class="fu">forecast</span>(modelo_boxcox, <span class="at">h =</span> <span class="dv">12</span>)</span>
-<span id="cb30-3"><a href="#cb30-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb30-4"><a href="#cb30-4" aria-hidden="true" tabindex="-1"></a><span class="co"># 4. Aplicar la transformación inversa a los resultados de la proyección</span></span>
-<span id="cb30-5"><a href="#cb30-5" aria-hidden="true" tabindex="-1"></a>proy_ocu <span class="ot">&lt;-</span> <span class="fu">InvBoxCox</span>(proy_boxcox<span class="sc">$</span>mean, lambda)</span>
-<span id="cb30-6"><a href="#cb30-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb30-7"><a href="#cb30-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Realizar una proyección a 12 meses con el modelo SARIMA</span></span>
-<span id="cb30-8"><a href="#cb30-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb30-9"><a href="#cb30-9" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(proy_ocu, <span class="at">main =</span> <span class="st">"Pronóstico de Ocupación Mensual con SARIMA"</span>,</span>
-<span id="cb30-10"><a href="#cb30-10" aria-hidden="true" tabindex="-1"></a>     <span class="at">xlab =</span> <span class="st">"Mes"</span>, <span class="at">ylab =</span> <span class="st">"Ocupación Hotelera"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb34"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a><span class="co"># 3. Realizar la proyección</span></span>
+<span id="cb34-2"><a href="#cb34-2" aria-hidden="true" tabindex="-1"></a>proy_boxcox <span class="ot">&lt;-</span> <span class="fu">forecast</span>(modelo_boxcox, <span class="at">h =</span> <span class="dv">12</span>)</span>
+<span id="cb34-3"><a href="#cb34-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb34-4"><a href="#cb34-4" aria-hidden="true" tabindex="-1"></a><span class="co"># 4. Aplicar la transformación inversa a los resultados de la proyección</span></span>
+<span id="cb34-5"><a href="#cb34-5" aria-hidden="true" tabindex="-1"></a>proy_ocu <span class="ot">&lt;-</span> <span class="fu">InvBoxCox</span>(proy_boxcox<span class="sc">$</span>mean, lambda)</span>
+<span id="cb34-6"><a href="#cb34-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb34-7"><a href="#cb34-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Realizar una proyección a 12 meses con el modelo SARIMA</span></span>
+<span id="cb34-8"><a href="#cb34-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb34-9"><a href="#cb34-9" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(proy_ocu, <span class="at">main =</span> <span class="st">"Pronóstico de Ocupación Mensual con SARIMA"</span>,</span>
+<span id="cb34-10"><a href="#cb34-10" aria-hidden="true" tabindex="-1"></a>     <span class="at">xlab =</span> <span class="st">"Mes"</span>, <span class="at">ylab =</span> <span class="st">"Ocupación Hotelera"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="proyecto_final_files/figure-html/unnamed-chunk-16-1.png" class="img-fluid figure-img" width="672"></p>
+<p><img src="proyecto_final_files/figure-html/unnamed-chunk-17-1.png" class="img-fluid figure-img" width="672"></p>
 </figure>
 </div>
 </div>
 </div>
 <p>Se realiza el mismo proceso para la tarifa promedio, con el fin de unir ambas proyecciones y determinar un posible ingreso por venta de habitaciones, en un preiodo de 12 meses a futuro.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb31"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a>ts_tarifa_prom <span class="ot">&lt;-</span> <span class="fu">ts</span>(ocupacion_mensual<span class="sc">$</span>Promedio_Tarifa, </span>
-<span id="cb31-2"><a href="#cb31-2" aria-hidden="true" tabindex="-1"></a>                     <span class="at">start =</span> <span class="fu">c</span>(<span class="fu">year</span>(<span class="fu">min</span>(ocupacion_mensual<span class="sc">$</span>Fecha)), <span class="fu">month</span>(<span class="fu">min</span>(ocupacion_mensual<span class="sc">$</span>Fecha))), </span>
-<span id="cb31-3"><a href="#cb31-3" aria-hidden="true" tabindex="-1"></a>                     <span class="at">frequency =</span> <span class="dv">12</span>)</span>
-<span id="cb31-4"><a href="#cb31-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Calcular el promedio de la serie excluyendo los ceros</span></span>
-<span id="cb31-5"><a href="#cb31-5" aria-hidden="true" tabindex="-1"></a>mean_tarifa <span class="ot">&lt;-</span> <span class="fu">mean</span>(ts_tarifa_prom[ts_tarifa_prom <span class="sc">!=</span> <span class="dv">0</span>], <span class="at">na.rm =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb31-6"><a href="#cb31-6" aria-hidden="true" tabindex="-1"></a>ts_tarifa_prom[ts_tarifa_prom <span class="sc">==</span> <span class="dv">0</span>] <span class="ot">&lt;-</span> mean_tarifa <span class="co">#Periodo donde el hotel estuvo cerrado por pandemia</span></span>
-<span id="cb31-7"><a href="#cb31-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Ajustar un modelo x13arima a una serie temporal</span></span>
-<span id="cb31-8"><a href="#cb31-8" aria-hidden="true" tabindex="-1"></a>modelot <span class="ot">&lt;-</span> <span class="fu">seas</span>(ts_tarifa_prom)</span>
-<span id="cb31-9"><a href="#cb31-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb31-10"><a href="#cb31-10" aria-hidden="true" tabindex="-1"></a><span class="co"># Resumen del modelo ajustado</span></span>
-<span id="cb31-11"><a href="#cb31-11" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(modelot)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb35"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a>ts_tarifa_prom <span class="ot">&lt;-</span> <span class="fu">ts</span>(ocupacion_mensual<span class="sc">$</span>Promedio_Tarifa, </span>
+<span id="cb35-2"><a href="#cb35-2" aria-hidden="true" tabindex="-1"></a>                     <span class="at">start =</span> <span class="fu">c</span>(<span class="fu">year</span>(<span class="fu">min</span>(ocupacion_mensual<span class="sc">$</span>Fecha)), <span class="fu">month</span>(<span class="fu">min</span>(ocupacion_mensual<span class="sc">$</span>Fecha))), </span>
+<span id="cb35-3"><a href="#cb35-3" aria-hidden="true" tabindex="-1"></a>                     <span class="at">frequency =</span> <span class="dv">12</span>)</span>
+<span id="cb35-4"><a href="#cb35-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Calcular el promedio de la serie excluyendo los ceros</span></span>
+<span id="cb35-5"><a href="#cb35-5" aria-hidden="true" tabindex="-1"></a>mean_tarifa <span class="ot">&lt;-</span> <span class="fu">mean</span>(ts_tarifa_prom[ts_tarifa_prom <span class="sc">!=</span> <span class="dv">0</span>], <span class="at">na.rm =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb35-6"><a href="#cb35-6" aria-hidden="true" tabindex="-1"></a>ts_tarifa_prom[ts_tarifa_prom <span class="sc">==</span> <span class="dv">0</span>] <span class="ot">&lt;-</span> mean_tarifa <span class="co">#Periodo donde el hotel estuvo cerrado por pandemia</span></span>
+<span id="cb35-7"><a href="#cb35-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Ajustar un modelo x13arima a una serie temporal</span></span>
+<span id="cb35-8"><a href="#cb35-8" aria-hidden="true" tabindex="-1"></a>modelot <span class="ot">&lt;-</span> <span class="fu">seas</span>(ts_tarifa_prom)</span>
+<span id="cb35-9"><a href="#cb35-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb35-10"><a href="#cb35-10" aria-hidden="true" tabindex="-1"></a><span class="co"># Resumen del modelo ajustado</span></span>
+<span id="cb35-11"><a href="#cb35-11" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(modelot)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>
 Call:
@@ -453,10 +472,10 @@ Box-Ljung (no autocorr.):  29.6   Shapiro (normality): 0.9812  </code></pre>
 </div>
 </div>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb33"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a>modelot <span class="ot">&lt;-</span> <span class="fu">Arima</span>(ts_tarifa_prom, </span>
-<span id="cb33-2"><a href="#cb33-2" aria-hidden="true" tabindex="-1"></a>                       <span class="at">order =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">1</span>, <span class="dv">0</span>), </span>
-<span id="cb33-3"><a href="#cb33-3" aria-hidden="true" tabindex="-1"></a>                       <span class="at">seasonal =</span> <span class="fu">list</span>(<span class="at">order =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">1</span>), <span class="at">period =</span> <span class="dv">12</span>))</span>
-<span id="cb33-4"><a href="#cb33-4" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(modelot)  <span class="co"># Resumen del modelo ajustado</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb37"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb37-1"><a href="#cb37-1" aria-hidden="true" tabindex="-1"></a>modelot <span class="ot">&lt;-</span> <span class="fu">Arima</span>(ts_tarifa_prom, </span>
+<span id="cb37-2"><a href="#cb37-2" aria-hidden="true" tabindex="-1"></a>                       <span class="at">order =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">1</span>, <span class="dv">0</span>), </span>
+<span id="cb37-3"><a href="#cb37-3" aria-hidden="true" tabindex="-1"></a>                       <span class="at">seasonal =</span> <span class="fu">list</span>(<span class="at">order =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">1</span>), <span class="at">period =</span> <span class="dv">12</span>))</span>
+<span id="cb37-4"><a href="#cb37-4" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(modelot)  <span class="co"># Resumen del modelo ajustado</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>Series: ts_tarifa_prom 
 ARIMA(0,1,0)(1,0,1)[12] 
@@ -477,9 +496,9 @@ Training set -0.2530591</code></pre>
 </div>
 </div>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb35"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a>residuals<span class="ot">=</span><span class="fu">resid</span>(modelot)</span>
-<span id="cb35-2"><a href="#cb35-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb35-3"><a href="#cb35-3" aria-hidden="true" tabindex="-1"></a><span class="fu">adf.test</span>(residuals)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb39"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb39-1"><a href="#cb39-1" aria-hidden="true" tabindex="-1"></a>residuals<span class="ot">=</span><span class="fu">resid</span>(modelot)</span>
+<span id="cb39-2"><a href="#cb39-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb39-3"><a href="#cb39-3" aria-hidden="true" tabindex="-1"></a><span class="fu">adf.test</span>(residuals)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stderr">
 <pre><code>Warning in adf.test(residuals): p-value smaller than printed p-value</code></pre>
 </div>
@@ -493,8 +512,8 @@ alternative hypothesis: stationary</code></pre>
 </div>
 </div>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb38"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb38-1"><a href="#cb38-1" aria-hidden="true" tabindex="-1"></a>proyec_tarif <span class="ot">=</span> <span class="fu">forecast</span>(modelot, <span class="at">h =</span><span class="dv">12</span>)</span>
-<span id="cb38-2"><a href="#cb38-2" aria-hidden="true" tabindex="-1"></a>proyec_tarif</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb42"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb42-1"><a href="#cb42-1" aria-hidden="true" tabindex="-1"></a>proyec_tarif <span class="ot">=</span> <span class="fu">forecast</span>(modelot, <span class="at">h =</span><span class="dv">12</span>)</span>
+<span id="cb42-2"><a href="#cb42-2" aria-hidden="true" tabindex="-1"></a>proyec_tarif</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>         Point Forecast    Lo 80    Hi 80     Lo 95    Hi 95
 Oct 2024       183952.5 169052.0 198853.0 161164.20 206740.8
@@ -514,73 +533,73 @@ Sep 2025       179933.7 128323.0 231544.4 101002.00 258865.4</code></pre>
 <p>##<strong>Proyección de los ingresos</strong></p>
 <p>Una vez validado ambos modelos se procede a tranformar la ocupación en habitaciones, para multiplicar por la proyeccion de tarifa promedio, asi visualizar los posibles ingresos por concepto de venta de habitaciones del hotel.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb40"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb40-1"><a href="#cb40-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Paso 1: Calcular habitaciones proyectadas</span></span>
-<span id="cb40-2"><a href="#cb40-2" aria-hidden="true" tabindex="-1"></a>habitaciones_proyectadas <span class="ot">&lt;-</span> <span class="fu">round</span>(proy_ocu <span class="sc">*</span> <span class="dv">67</span> <span class="sc">*</span> <span class="dv">30</span>, <span class="dv">0</span>)  <span class="co"># Multiplica ocupación proyectada por habitaciones y días, luego redondea</span></span>
-<span id="cb40-3"><a href="#cb40-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb40-4"><a href="#cb40-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Paso 2: Crear un data frame con las proyecciones</span></span>
-<span id="cb40-5"><a href="#cb40-5" aria-hidden="true" tabindex="-1"></a>df_proyecciones <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
-<span id="cb40-6"><a href="#cb40-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">Mes =</span> <span class="fu">time</span>(proy_boxcox<span class="sc">$</span>mean),                   <span class="co"># Extrae los tiempos de la proyección</span></span>
-<span id="cb40-7"><a href="#cb40-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">Habitaciones_Proyectadas =</span> habitaciones_proyectadas,  <span class="co"># Calcula habitaciones proyectadas</span></span>
-<span id="cb40-8"><a href="#cb40-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">Proyect_Tarifa =</span> proyec_tarif<span class="sc">$</span>mean               <span class="co"># Agrega la proyección de tarifas</span></span>
-<span id="cb40-9"><a href="#cb40-9" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb40-10"><a href="#cb40-10" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb40-11"><a href="#cb40-11" aria-hidden="true" tabindex="-1"></a><span class="co"># Paso 3: Calcular los ingresos potenciales</span></span>
-<span id="cb40-12"><a href="#cb40-12" aria-hidden="true" tabindex="-1"></a>df_proyecciones <span class="ot">&lt;-</span> df_proyecciones <span class="sc">%&gt;%</span></span>
-<span id="cb40-13"><a href="#cb40-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">Ingresos_Potenciales =</span> Habitaciones_Proyectadas <span class="sc">*</span> Proyect_Tarifa)  <span class="co"># Calcula los ingresos</span></span>
-<span id="cb40-14"><a href="#cb40-14" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb40-15"><a href="#cb40-15" aria-hidden="true" tabindex="-1"></a><span class="co"># Paso 4: Visualizar los resultados</span></span>
-<span id="cb40-16"><a href="#cb40-16" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(df_proyecciones)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb44"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb44-1"><a href="#cb44-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Paso 1: Calcular habitaciones proyectadas</span></span>
+<span id="cb44-2"><a href="#cb44-2" aria-hidden="true" tabindex="-1"></a>habitaciones_proyectadas <span class="ot">&lt;-</span> <span class="fu">round</span>(proy_ocu <span class="sc">*</span> <span class="dv">67</span> <span class="sc">*</span> <span class="dv">30</span>, <span class="dv">0</span>)  <span class="co"># Multiplica ocupación proyectada por habitaciones y días, luego redondea</span></span>
+<span id="cb44-3"><a href="#cb44-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb44-4"><a href="#cb44-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Paso 2: Crear un data frame con las proyecciones</span></span>
+<span id="cb44-5"><a href="#cb44-5" aria-hidden="true" tabindex="-1"></a>df_proyecciones <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb44-6"><a href="#cb44-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">Mes =</span> <span class="fu">time</span>(proy_boxcox<span class="sc">$</span>mean),                   <span class="co"># Extrae los tiempos de la proyección</span></span>
+<span id="cb44-7"><a href="#cb44-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">Habitaciones_Proyectadas =</span> habitaciones_proyectadas,  <span class="co"># Calcula habitaciones proyectadas</span></span>
+<span id="cb44-8"><a href="#cb44-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">Proyect_Tarifa =</span> proyec_tarif<span class="sc">$</span>mean               <span class="co"># Agrega la proyección de tarifas</span></span>
+<span id="cb44-9"><a href="#cb44-9" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb44-10"><a href="#cb44-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb44-11"><a href="#cb44-11" aria-hidden="true" tabindex="-1"></a><span class="co"># Paso 3: Calcular los ingresos potenciales</span></span>
+<span id="cb44-12"><a href="#cb44-12" aria-hidden="true" tabindex="-1"></a>df_proyecciones <span class="ot">&lt;-</span> df_proyecciones <span class="sc">%&gt;%</span></span>
+<span id="cb44-13"><a href="#cb44-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">Ingresos_Potenciales =</span> Habitaciones_Proyectadas <span class="sc">*</span> Proyect_Tarifa)  <span class="co"># Calcula los ingresos</span></span>
+<span id="cb44-14"><a href="#cb44-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb44-15"><a href="#cb44-15" aria-hidden="true" tabindex="-1"></a><span class="co"># Paso 4: Visualizar los resultados</span></span>
+<span id="cb44-16"><a href="#cb44-16" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(df_proyecciones)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>        Mes Habitaciones_Proyectadas Proyect_Tarifa Ingresos_Potenciales
-1  2024.750                     1190       183952.5            218903496
-2  2024.833                     1287       178877.2            230215009
-3  2024.917                     1146       186513.4            213744339
-4  2025.000                     1221       189601.4            231503293
-5  2025.083                     1478       188245.2            278226430
-6  2025.167                     1016       179330.2            182199461
-7  2025.250                      955       176460.2            168519464
+1  2024.750                     1130       183952.5            207866345
+2  2024.833                     1229       178877.2            219840129
+3  2024.917                     1107       186513.4            206470317
+4  2025.000                     1181       189601.4            223919237
+5  2025.083                     1400       188245.2            263543303
+6  2025.167                      984       179330.2            176460895
+7  2025.250                      935       176460.2            164990260
 8  2025.333                      838       173559.3            145442684
-9  2025.417                      965       173211.3            167148913
-10 2025.500                     1121       172070.9            192891486
-11 2025.583                     1065       174307.7            185637716
-12 2025.667                     1059       179933.7            190549787</code></pre>
+9  2025.417                      945       173211.3            163684687
+10 2025.500                     1086       172070.9            186869004
+11 2025.583                     1028       174307.7            179188330
+12 2025.667                     1020       179933.7            183532373</code></pre>
 </div>
 </div>
 <p>Por ultimo se grafica la proyeccion de ventas de habitaciones.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb42"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb42-1"><a href="#cb42-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Asegúrate de que 'Mes' sea una serie de tiempo y extrae las fechas</span></span>
-<span id="cb42-2"><a href="#cb42-2" aria-hidden="true" tabindex="-1"></a>df_proyecciones <span class="ot">&lt;-</span> df_proyecciones <span class="sc">%&gt;%</span></span>
-<span id="cb42-3"><a href="#cb42-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">Mes =</span> <span class="fu">as.Date</span>(<span class="fu">as.yearmon</span>(Mes)))  <span class="co"># Convertir ts a Date usando zoo</span></span>
-<span id="cb42-4"><a href="#cb42-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb42-5"><a href="#cb42-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Paso 1: Calcular ingresos potenciales en millones</span></span>
-<span id="cb42-6"><a href="#cb42-6" aria-hidden="true" tabindex="-1"></a>df_proyecciones <span class="ot">&lt;-</span> df_proyecciones <span class="sc">%&gt;%</span></span>
-<span id="cb42-7"><a href="#cb42-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">Ingresos_Potenciales_Millones =</span> Ingresos_Potenciales <span class="sc">/</span> <span class="fl">1e6</span>)  <span class="co"># Divide por 1,000,000</span></span>
-<span id="cb42-8"><a href="#cb42-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb42-9"><a href="#cb42-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Paso 2: Graficar los ingresos potenciales en millones</span></span>
-<span id="cb42-10"><a href="#cb42-10" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(df_proyecciones, <span class="fu">aes</span>(<span class="at">x =</span> Mes, <span class="at">y =</span> Ingresos_Potenciales_Millones)) <span class="sc">+</span></span>
-<span id="cb42-11"><a href="#cb42-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="at">color =</span> <span class="st">"#0072B2"</span>, <span class="at">size =</span> <span class="fl">1.2</span>) <span class="sc">+</span>  <span class="co"># Cambiar color y aumentar el tamaño de la línea</span></span>
-<span id="cb42-12"><a href="#cb42-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="at">color =</span> <span class="st">"#D55E00"</span>, <span class="at">size =</span> <span class="dv">3</span>) <span class="sc">+</span>  <span class="co"># Cambiar color de los puntos</span></span>
-<span id="cb42-13"><a href="#cb42-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_text</span>(<span class="fu">aes</span>(<span class="at">label =</span> <span class="fu">round</span>(Ingresos_Potenciales_Millones, <span class="dv">1</span>)), </span>
-<span id="cb42-14"><a href="#cb42-14" aria-hidden="true" tabindex="-1"></a>            <span class="at">vjust =</span> <span class="sc">-</span><span class="fl">0.5</span>, </span>
-<span id="cb42-15"><a href="#cb42-15" aria-hidden="true" tabindex="-1"></a>            <span class="at">size =</span> <span class="fl">3.5</span>, </span>
-<span id="cb42-16"><a href="#cb42-16" aria-hidden="true" tabindex="-1"></a>            <span class="at">color =</span> <span class="st">"#D55E00"</span>, </span>
-<span id="cb42-17"><a href="#cb42-17" aria-hidden="true" tabindex="-1"></a>            <span class="at">check_overlap =</span> <span class="cn">TRUE</span>) <span class="sc">+</span>  <span class="co"># Etiquetas en puntos</span></span>
-<span id="cb42-18"><a href="#cb42-18" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">"Ingresos Potenciales por Venta de Habitaciones (en Millones)"</span>,</span>
-<span id="cb42-19"><a href="#cb42-19" aria-hidden="true" tabindex="-1"></a>       <span class="at">x =</span> <span class="st">"Mes"</span>,</span>
-<span id="cb42-20"><a href="#cb42-20" aria-hidden="true" tabindex="-1"></a>       <span class="at">y =</span> <span class="st">"Ingresos Potenciales ($ Millones)"</span>) <span class="sc">+</span></span>
-<span id="cb42-21"><a href="#cb42-21" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>(<span class="at">base_size =</span> <span class="dv">14</span>) <span class="sc">+</span>  <span class="co"># Usar tema minimalista y aumentar el tamaño de base</span></span>
-<span id="cb42-22"><a href="#cb42-22" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_y_continuous</span>(<span class="at">labels =</span> <span class="fu">dollar_format</span>(<span class="at">scale =</span> <span class="fl">1e-6</span>, <span class="at">suffix =</span> <span class="st">"M"</span>)) <span class="sc">+</span>  <span class="co"># Formato en millones</span></span>
-<span id="cb42-23"><a href="#cb42-23" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_x_date</span>(<span class="at">date_breaks =</span> <span class="st">"1 month"</span>, <span class="at">date_labels =</span> <span class="st">"%b"</span>, <span class="at">expand =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">0</span>)) <span class="sc">+</span>  <span class="co"># Personalizar el eje X</span></span>
-<span id="cb42-24"><a href="#cb42-24" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(</span>
-<span id="cb42-25"><a href="#cb42-25" aria-hidden="true" tabindex="-1"></a>    <span class="at">plot.title =</span> <span class="fu">element_text</span>(<span class="at">hjust =</span> <span class="fl">0.5</span>, <span class="at">face =</span> <span class="st">"bold"</span>, <span class="at">size =</span> <span class="dv">16</span>, <span class="at">color =</span> <span class="st">"#2A2A2A"</span>),  <span class="co"># Centrar título y cambiar estilo</span></span>
-<span id="cb42-26"><a href="#cb42-26" aria-hidden="true" tabindex="-1"></a>    <span class="at">axis.title.x =</span> <span class="fu">element_text</span>(<span class="at">face =</span> <span class="st">"bold"</span>, <span class="at">size =</span> <span class="dv">14</span>, <span class="at">color =</span> <span class="st">"#2A2A2A"</span>),  <span class="co"># Título eje X</span></span>
-<span id="cb42-27"><a href="#cb42-27" aria-hidden="true" tabindex="-1"></a>    <span class="at">axis.title.y =</span> <span class="fu">element_text</span>(<span class="at">face =</span> <span class="st">"bold"</span>, <span class="at">size =</span> <span class="dv">14</span>, <span class="at">color =</span> <span class="st">"#2A2A2A"</span>),  <span class="co"># Título eje Y</span></span>
-<span id="cb42-28"><a href="#cb42-28" aria-hidden="true" tabindex="-1"></a>    <span class="at">axis.text.x =</span> <span class="fu">element_text</span>(<span class="at">angle =</span> <span class="dv">45</span>, <span class="at">hjust =</span> <span class="dv">1</span>, <span class="at">color =</span> <span class="st">"#2A2A2A"</span>),  <span class="co"># Etiquetas eje X</span></span>
-<span id="cb42-29"><a href="#cb42-29" aria-hidden="true" tabindex="-1"></a>    <span class="at">axis.text.y =</span> <span class="fu">element_text</span>(<span class="at">color =</span> <span class="st">"#2A2A2A"</span>),  <span class="co"># Etiquetas eje Y</span></span>
-<span id="cb42-30"><a href="#cb42-30" aria-hidden="true" tabindex="-1"></a>    <span class="at">panel.grid.major =</span> <span class="fu">element_line</span>(<span class="at">color =</span> <span class="st">"#D9D9D9"</span>),  <span class="co"># Color de las líneas de la cuadrícula</span></span>
-<span id="cb42-31"><a href="#cb42-31" aria-hidden="true" tabindex="-1"></a>    <span class="at">panel.grid.minor =</span> <span class="fu">element_blank</span>(),  <span class="co"># Eliminar líneas de cuadrícula menores</span></span>
-<span id="cb42-32"><a href="#cb42-32" aria-hidden="true" tabindex="-1"></a>    <span class="at">legend.position =</span> <span class="st">"none"</span>  <span class="co"># Ocultar leyenda si no es necesaria</span></span>
-<span id="cb42-33"><a href="#cb42-33" aria-hidden="true" tabindex="-1"></a>  )</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb46"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb46-1"><a href="#cb46-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Asegúrate de que 'Mes' sea una serie de tiempo y extrae las fechas</span></span>
+<span id="cb46-2"><a href="#cb46-2" aria-hidden="true" tabindex="-1"></a>df_proyecciones <span class="ot">&lt;-</span> df_proyecciones <span class="sc">%&gt;%</span></span>
+<span id="cb46-3"><a href="#cb46-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">Mes =</span> <span class="fu">as.Date</span>(<span class="fu">as.yearmon</span>(Mes)))  <span class="co"># Convertir ts a Date usando zoo</span></span>
+<span id="cb46-4"><a href="#cb46-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb46-5"><a href="#cb46-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Paso 1: Calcular ingresos potenciales en millones</span></span>
+<span id="cb46-6"><a href="#cb46-6" aria-hidden="true" tabindex="-1"></a>df_proyecciones <span class="ot">&lt;-</span> df_proyecciones <span class="sc">%&gt;%</span></span>
+<span id="cb46-7"><a href="#cb46-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">Ingresos_Potenciales_Millones =</span> Ingresos_Potenciales <span class="sc">/</span> <span class="fl">1e6</span>)  <span class="co"># Divide por 1,000,000</span></span>
+<span id="cb46-8"><a href="#cb46-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb46-9"><a href="#cb46-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Paso 2: Graficar los ingresos potenciales en millones</span></span>
+<span id="cb46-10"><a href="#cb46-10" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(df_proyecciones, <span class="fu">aes</span>(<span class="at">x =</span> Mes, <span class="at">y =</span> Ingresos_Potenciales_Millones)) <span class="sc">+</span></span>
+<span id="cb46-11"><a href="#cb46-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="at">color =</span> <span class="st">"#0072B2"</span>, <span class="at">size =</span> <span class="fl">1.2</span>) <span class="sc">+</span>  <span class="co"># Cambiar color y aumentar el tamaño de la línea</span></span>
+<span id="cb46-12"><a href="#cb46-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="at">color =</span> <span class="st">"#D55E00"</span>, <span class="at">size =</span> <span class="dv">3</span>) <span class="sc">+</span>  <span class="co"># Cambiar color de los puntos</span></span>
+<span id="cb46-13"><a href="#cb46-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_text</span>(<span class="fu">aes</span>(<span class="at">label =</span> <span class="fu">round</span>(Ingresos_Potenciales_Millones, <span class="dv">1</span>)), </span>
+<span id="cb46-14"><a href="#cb46-14" aria-hidden="true" tabindex="-1"></a>            <span class="at">vjust =</span> <span class="sc">-</span><span class="fl">0.5</span>, </span>
+<span id="cb46-15"><a href="#cb46-15" aria-hidden="true" tabindex="-1"></a>            <span class="at">size =</span> <span class="fl">3.5</span>, </span>
+<span id="cb46-16"><a href="#cb46-16" aria-hidden="true" tabindex="-1"></a>            <span class="at">color =</span> <span class="st">"#D55E00"</span>, </span>
+<span id="cb46-17"><a href="#cb46-17" aria-hidden="true" tabindex="-1"></a>            <span class="at">check_overlap =</span> <span class="cn">TRUE</span>) <span class="sc">+</span>  <span class="co"># Etiquetas en puntos</span></span>
+<span id="cb46-18"><a href="#cb46-18" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">"Ingresos Potenciales por Venta de Habitaciones (en Millones)"</span>,</span>
+<span id="cb46-19"><a href="#cb46-19" aria-hidden="true" tabindex="-1"></a>       <span class="at">x =</span> <span class="st">"Mes"</span>,</span>
+<span id="cb46-20"><a href="#cb46-20" aria-hidden="true" tabindex="-1"></a>       <span class="at">y =</span> <span class="st">"Ingresos Potenciales ($ Millones)"</span>) <span class="sc">+</span></span>
+<span id="cb46-21"><a href="#cb46-21" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>(<span class="at">base_size =</span> <span class="dv">14</span>) <span class="sc">+</span>  <span class="co"># Usar tema minimalista y aumentar el tamaño de base</span></span>
+<span id="cb46-22"><a href="#cb46-22" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_y_continuous</span>(<span class="at">labels =</span> <span class="fu">dollar_format</span>(<span class="at">scale =</span> <span class="fl">1e-6</span>, <span class="at">suffix =</span> <span class="st">"M"</span>)) <span class="sc">+</span>  <span class="co"># Formato en millones</span></span>
+<span id="cb46-23"><a href="#cb46-23" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_x_date</span>(<span class="at">date_breaks =</span> <span class="st">"1 month"</span>, <span class="at">date_labels =</span> <span class="st">"%b"</span>, <span class="at">expand =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">0</span>)) <span class="sc">+</span>  <span class="co"># Personalizar el eje X</span></span>
+<span id="cb46-24"><a href="#cb46-24" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(</span>
+<span id="cb46-25"><a href="#cb46-25" aria-hidden="true" tabindex="-1"></a>    <span class="at">plot.title =</span> <span class="fu">element_text</span>(<span class="at">hjust =</span> <span class="fl">0.5</span>, <span class="at">face =</span> <span class="st">"bold"</span>, <span class="at">size =</span> <span class="dv">16</span>, <span class="at">color =</span> <span class="st">"#2A2A2A"</span>),  <span class="co"># Centrar título y cambiar estilo</span></span>
+<span id="cb46-26"><a href="#cb46-26" aria-hidden="true" tabindex="-1"></a>    <span class="at">axis.title.x =</span> <span class="fu">element_text</span>(<span class="at">face =</span> <span class="st">"bold"</span>, <span class="at">size =</span> <span class="dv">14</span>, <span class="at">color =</span> <span class="st">"#2A2A2A"</span>),  <span class="co"># Título eje X</span></span>
+<span id="cb46-27"><a href="#cb46-27" aria-hidden="true" tabindex="-1"></a>    <span class="at">axis.title.y =</span> <span class="fu">element_text</span>(<span class="at">face =</span> <span class="st">"bold"</span>, <span class="at">size =</span> <span class="dv">14</span>, <span class="at">color =</span> <span class="st">"#2A2A2A"</span>),  <span class="co"># Título eje Y</span></span>
+<span id="cb46-28"><a href="#cb46-28" aria-hidden="true" tabindex="-1"></a>    <span class="at">axis.text.x =</span> <span class="fu">element_text</span>(<span class="at">angle =</span> <span class="dv">45</span>, <span class="at">hjust =</span> <span class="dv">1</span>, <span class="at">color =</span> <span class="st">"#2A2A2A"</span>),  <span class="co"># Etiquetas eje X</span></span>
+<span id="cb46-29"><a href="#cb46-29" aria-hidden="true" tabindex="-1"></a>    <span class="at">axis.text.y =</span> <span class="fu">element_text</span>(<span class="at">color =</span> <span class="st">"#2A2A2A"</span>),  <span class="co"># Etiquetas eje Y</span></span>
+<span id="cb46-30"><a href="#cb46-30" aria-hidden="true" tabindex="-1"></a>    <span class="at">panel.grid.major =</span> <span class="fu">element_line</span>(<span class="at">color =</span> <span class="st">"#D9D9D9"</span>),  <span class="co"># Color de las líneas de la cuadrícula</span></span>
+<span id="cb46-31"><a href="#cb46-31" aria-hidden="true" tabindex="-1"></a>    <span class="at">panel.grid.minor =</span> <span class="fu">element_blank</span>(),  <span class="co"># Eliminar líneas de cuadrícula menores</span></span>
+<span id="cb46-32"><a href="#cb46-32" aria-hidden="true" tabindex="-1"></a>    <span class="at">legend.position =</span> <span class="st">"none"</span>  <span class="co"># Ocultar leyenda si no es necesaria</span></span>
+<span id="cb46-33"><a href="#cb46-33" aria-hidden="true" tabindex="-1"></a>  )</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stderr">
 <pre><code>Warning: Using `size` aesthetic for lines was deprecated in ggplot2 3.4.0.
 ℹ Please use `linewidth` instead.</code></pre>
@@ -592,7 +611,7 @@ to continuous.</code></pre>
 <div class="cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="proyecto_final_files/figure-html/unnamed-chunk-22-1.png" class="img-fluid figure-img" width="672"></p>
+<p><img src="proyecto_final_files/figure-html/unnamed-chunk-23-1.png" class="img-fluid figure-img" width="672"></p>
 </figure>
 </div>
 </div>
